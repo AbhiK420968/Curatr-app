@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Explorer - Digital Naturalist Travel</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#1B5E20",
+              "primary-container": "#C8E6C9",
+              "on-primary": "#FFFFFF",
+              "surface-container-lowest": "#FFFFFF",
+              "surface-container-low": "#F1F8E9",
+              "surface-container": "#E8F5E9",
+              "background": "#F5F5F5",
+              "on-surface": "#1B1C1B",
+              "on-surface-variant": "#434943",
+              "outline": "#737973",
+              "secondary": "#386B3B"
+            },
+            fontFamily: {
+              "headline": ["Plus Jakarta Sans"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "1.5rem", "lg": "2.5rem", "xl": "3.5rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      body {
+        font-family: 'Inter', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        background-image: radial-gradient(at 0% 0%, rgba(27, 94, 32, 0.05) 0px, transparent 50%), 
+                          radial-gradient(at 100% 100%, rgba(27, 94, 32, 0.05) 0px, transparent 50%);
+        background-attachment: fixed;
+      }
+      .font-headline {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+      }
+      ::-webkit-scrollbar {
+        display: none;
+      }
+      .glass-card {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+      }
+      .dark .glass-card {
+        background: rgba(20, 20, 20, 0.7);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+    </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md sticky top-0 z-50 border-b border-white/20">
+<div class="flex items-center justify-between px-6 py-4 w-full max-w-7xl mx-auto">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-white/50 overflow-hidden ring-1 ring-black/5">
+<img alt="User profile photo" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA8eOEaZbRWhBp3s2gFIfPjV8qlT7vxUnoJQ1L_G2s9qnCEgZ8JWQMXrODQRa4donrpIfxsj_fIIXwf2mSI28QPbp8l0Qi38XwbbV42m7CUqQtXLy_sju9yjEhYBcxEmYukOWEUk6d1d01SCY9yeeV8CbAKvrvVLM6PPj42qdbJFCjVIIemnak4c84UkffrG5G5Qb-xAkcC5weQbNaXLuu4K9BAbgeh2xL8ZxedK0XYgH9oMwX_6eenXkMK3W1yBQHJopP33CMlJaM"/>
+</div>
+<h1 class="font-headline font-extrabold tracking-tighter text-primary dark:text-green-400 text-2xl">Explorer</h1>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-black/5 transition-colors">
+<span class="material-symbols-outlined text-primary" data-icon="search">search</span>
+</button>
+</div>
+</header>
+<main class="max-w-7xl mx-auto px-6 pt-10 space-y-12">
+<!-- Greeting & Search Hero -->
+<section class="space-y-8">
+<div class="space-y-2">
+<p class="font-body text-primary font-bold tracking-widest text-xs uppercase opacity-80">Welcome back</p>
+<h2 class="font-headline text-5xl font-extrabold text-on-surface tracking-tight">Hello, Explorer</h2>
+</div>
+<div class="relative group">
+<div class="absolute inset-y-0 left-6 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-primary/60" data-icon="travel_explore">travel_explore</span>
+</div>
+<input class="w-full h-18 pl-16 pr-6 bg-white/50 backdrop-blur-md rounded-2xl border border-white/50 shadow-sm focus:ring-2 focus:ring-primary/20 transition-all font-body text-lg" placeholder="Where will your nature take you?" type="text"/>
+</div>
+</section>
+<!-- Category Pill Tags -->
+<section class="overflow-x-auto pb-4 -mx-6 px-6">
+<div class="flex gap-4">
+<button class="flex items-center gap-2 px-8 py-3.5 bg-primary text-on-primary rounded-full font-bold shadow-lg shadow-primary/20 whitespace-nowrap active:scale-95 transition-all duration-300">
+<span class="material-symbols-outlined text-[20px]" data-icon="forest">forest</span>
+                Nature
+            </button>
+<button class="flex items-center gap-2 px-8 py-3.5 bg-white/70 backdrop-blur-md text-on-surface-variant rounded-full font-bold border border-white/50 whitespace-nowrap hover:bg-white transition-all duration-300">
+<span class="material-symbols-outlined text-[20px]" data-icon="beach_access">beach_access</span>
+                Beaches
+            </button>
+<button class="flex items-center gap-2 px-8 py-3.5 bg-white/70 backdrop-blur-md text-on-surface-variant rounded-full font-bold border border-white/50 whitespace-nowrap hover:bg-white transition-all duration-300">
+<span class="material-symbols-outlined text-[20px]" data-icon="landscape">landscape</span>
+                Mountains
+            </button>
+<button class="flex items-center gap-2 px-8 py-3.5 bg-white/70 backdrop-blur-md text-on-surface-variant rounded-full font-bold border border-white/50 whitespace-nowrap hover:bg-white transition-all duration-300">
+<span class="material-symbols-outlined text-[20px]" data-icon="location_city">location_city</span>
+                Cities
+            </button>
+</div>
+</section>
+<!-- Recommended Section -->
+<section class="space-y-8">
+<div class="flex justify-between items-end">
+<h3 class="font-headline text-2xl font-extrabold text-on-surface tracking-tight">Recommended for You</h3>
+<button class="text-primary font-extrabold text-sm hover:underline">View All</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+<!-- Main Featured Card (Bora Bora) -->
+<div class="group relative rounded-3xl overflow-hidden md:col-span-2 lg:col-span-2 h-[500px] shadow-2xl transition-all duration-700">
+<img alt="Bora Bora" class="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2GtxPNpoaeGqkVUUWf8rmQKra5OFr6eXCec17Y-phKpyoaTnN7HNpSxoHOIKd09n7zoPYqveNuX4YY5NFd7duHAkPhSZCBPuh-Mlx6Oay29hyZg5DAWTEuWG8Bc6-Qb2FCYY1HZhP45wWaFY2aza7gIliHDVStXsZbs6DPmOV-TDVNHhRARJYieahY2Qs8HfmYwBJaWB9F0z1lgiwnqpBNrwr-KDTS2raOSdhaUIjRu6dhSqsebNAy_hqzWJMDQ4u8X-As2qZVHo"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent"></div>
+<div class="absolute bottom-0 left-0 right-0 p-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div class="glass-card bg-white/20 backdrop-blur-md rounded-3xl p-6 border border-white/30 text-white flex-1 max-w-xl">
+<div class="flex items-center gap-2 text-green-300 font-bold tracking-widest text-[10px] uppercase mb-2">
+<span class="material-symbols-outlined text-[14px]" data-icon="verified" style="font-variation-settings: 'FILL' 1;">verified</span>
+                            Top Pick
+                        </div>
+<h4 class="text-3xl font-headline font-extrabold mb-3">Bora Bora, French Polynesia</h4>
+<div class="flex gap-4 text-white/80 text-sm font-medium">
+<span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[18px]" data-icon="calendar_today">calendar_today</span> Oct 12 - 18</span>
+<span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[18px]" data-icon="distance">distance</span> 4,200 km</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="glass-card px-5 py-3 rounded-full flex items-center gap-2 text-white border border-white/30">
+<span class="material-symbols-outlined text-yellow-400" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-extrabold">4.9</span>
+</div>
+<button class="w-16 h-16 bg-primary text-on-primary rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-xl shadow-primary/30">
+<span class="material-symbols-outlined text-2xl" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Swiss Alps Card -->
+<div class="group relative rounded-3xl overflow-hidden h-[500px] shadow-2xl transition-all duration-700">
+<img alt="Swiss Alps" class="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAKv1-fnP4RotF6Q7NQj2OBU4cA6EJXl4NGSPot27ZMdzXrujeB-StamiLb8ZQHRSv1Xaxr9bNKV_pUFCTSBL5R7wXMPG0gSlXjHrhc_JgmOPkHLes7cCD0TkyVOumjeKKABgvRIkhtgYA6fQwavMtmEQW0D1vMxECSpJiYlaNc6Af1giV3VzIP1Fbp5oVjBuiwcA55LzCNn1wCWXL1ET8kUFD9LgNGX5wYtd5hSdxjHmzyZeJuTrm89zefbOVVRkWyI7sLzHU6M8s"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute top-6 right-6">
+<button class="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/30 hover:bg-white/40 transition-colors">
+<span class="material-symbols-outlined" data-icon="bookmark">bookmark</span>
+</button>
+</div>
+<div class="absolute bottom-0 left-0 right-0 p-6">
+<div class="glass-card bg-black/30 backdrop-blur-md border border-white/20 rounded-2xl p-6 text-white">
+<h4 class="text-xl font-headline font-extrabold mb-1">Zermatt, Swiss Alps</h4>
+<div class="flex items-center justify-between mt-4">
+<span class="font-bold text-lg text-white">$280<span class="text-xs font-normal opacity-60">/night</span></span>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-yellow-400 text-[18px]" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-bold">4.8</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Kyoto -->
+<div class="group relative rounded-3xl overflow-hidden h-[420px] shadow-xl">
+<img alt="Kyoto" class="absolute inset-0 w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDMJSBqnhaOHJxenG4dXPXhjk0G8DbtcWngn2Yz_5SXERE4DcmL3A9vvlTr6f23bZsgPZx_d8v8cEW3qIKt5fU-rlYmr7u2xNUtiFQnAohkKIuJbXJqvLVOUWgrF1JMEDd9uGKC35q5qtFc3fRC-VZLfV260EaxTnkun1NQLrKwoGLLwJRfDnIH1hFduw20ws6JohApZhhhKa2TVkZn-8xHJb4fsq-Ddrv7ItXIOv-IrDfHIhEHMZADyuK1dxPXDiRWiIeILgebrbQ"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
+<div class="absolute bottom-6 left-6 right-6">
+<div class="glass-card bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/20 text-white">
+<h4 class="text-lg font-headline font-bold mb-1">Arashiyama, Kyoto</h4>
+<div class="flex justify-between items-center text-xs opacity-80">
+<span>3,200 km away</span>
+<span class="px-3 py-1 bg-white/20 rounded-full font-bold uppercase tracking-wider">Cultural</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Santorini -->
+<div class="group relative rounded-3xl overflow-hidden h-[420px] shadow-xl">
+<img alt="Santorini" class="absolute inset-0 w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuANlbZl0DWM-u6MA0iHUtXETB2budvoOFeWUTh3QWZWSRut57cDN2kDZ5jklqBwkwDru2o9lZ-Uo0Y-67bcAMagwRKxT8YaidAkw_dT7X92vE0Huh_MrJQ1ZUbV-j_ccHrmdAtXGxarua6ov52IFSOcRh4bSJ9ZTNWwIiyHsXO99u5MalEP1AU_PP6A9iD5JTFMvGDiYf6AKXCf6P4_hjyW6-X1J0QbQ6fjGarPhPvozweHOpff5PbhbUg0kX_NYY7Tt7D3AEJkDSE"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
+<div class="absolute bottom-6 left-6 right-6">
+<div class="glass-card bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/20 text-white">
+<h4 class="text-lg font-headline font-bold mb-1">Oia, Santorini</h4>
+<div class="flex justify-between items-center text-xs opacity-80">
+<span>5,400 km away</span>
+<span class="px-3 py-1 bg-white/20 rounded-full font-bold uppercase tracking-wider">Luxury</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Bali -->
+<div class="group relative rounded-3xl overflow-hidden h-[420px] shadow-xl">
+<img alt="Bali" class="absolute inset-0 w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC6K2Bs1-aV9AGmZXY-0SPgYwkKcWhLAyd5BXRVOy6Q01uTgSBxuhQ5MJOwSpVlzn5IHUUIEI7BlSYeMG_I3raKhDnWH06bYtQ84PI8ZAt6sSyB2IS0FRcxeRDIvgQtlTx68ngZNmPcDIhhWnqJRfBF2D54XKGOO-XHfiK4Tww7tHYncZnZgDMm5pBH5Zz-dB1ec-gwmYnNot1pqPAiRItVE8eoOuCIAcmwxe31OfMMEXCJ9hLX5sm3MTo9kXI1BgqyWlIc6A30WpI"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
+<div class="absolute bottom-6 left-6 right-6">
+<div class="glass-card bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/20 text-white">
+<h4 class="text-lg font-headline font-bold mb-1">Ubud, Bali</h4>
+<div class="flex justify-between items-center text-xs opacity-80">
+<span>800 km away</span>
+<span class="px-3 py-1 bg-white/20 rounded-full font-bold uppercase tracking-wider">Tropical</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md z-50 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md rounded-[2.5rem] shadow-2xl border border-white/50 px-2 py-2 flex justify-between items-center">
+<a class="flex flex-col items-center justify-center bg-primary text-on-primary rounded-full px-8 py-3 transition-all duration-500 shadow-lg shadow-primary/20 group" href="#">
+<span class="material-symbols-outlined" data-icon="home_max" style="font-variation-settings: 'FILL' 1;">home_max</span>
+</a>
+<a class="flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 px-6 py-3 transition-transform duration-300 active:scale-90 hover:text-primary group" href="#">
+<span class="material-symbols-outlined" data-icon="explore">explore</span>
+</a>
+<a class="flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 px-6 py-3 transition-transform duration-300 active:scale-90 hover:text-primary group" href="#">
+<span class="material-symbols-outlined" data-icon="bookmark">bookmark</span>
+</a>
+<a class="flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 px-6 py-3 transition-transform duration-300 active:scale-90 hover:text-primary group" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+</a>
+</nav>
+<!-- Contextual Floating Action Button (FAB) -->
+<button class="fixed bottom-32 right-6 w-16 h-16 bg-primary text-on-primary rounded-2xl shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-40 group border-t border-white/20">
+<span class="material-symbols-outlined text-3xl" data-icon="add_location_alt" style="font-variation-settings: 'FILL' 1;">add_location_alt</span>
+<span class="absolute right-full mr-4 bg-white/80 backdrop-blur-md text-primary text-xs font-extrabold py-2.5 px-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-white/50">New Trip</span>
+</button>
+</body></html>

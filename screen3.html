@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "tertiary-dim": "#47524a",
+              "surface-container-lowest": "#ffffff",
+              "error": "#b02500",
+              "surface": "#f6f6f6",
+              "outline": "#767777",
+              "secondary-dim": "#355736",
+              "primary-fixed": "#b2faa9",
+              "primary": "#266829",
+              "surface-container": "#e7e8e8",
+              "secondary": "#416441",
+              "on-tertiary-container": "#515d54",
+              "on-primary-fixed-variant": "#2a6c2c",
+              "on-primary": "#d1ffc8",
+              "surface-container-high": "#e1e3e3",
+              "tertiary": "#525e55",
+              "primary-dim": "#185c1e",
+              "error-dim": "#b92902",
+              "background": "#f6f6f6",
+              "on-primary-container": "#1f6223",
+              "secondary-fixed": "#c5edc1",
+              "on-secondary": "#d5fed0",
+              "on-surface": "#2d2f2f",
+              "secondary-container": "#c5edc1",
+              "on-secondary-fixed-variant": "#416441",
+              "secondary-fixed-dim": "#b7dfb3",
+              "surface-tint": "#266829",
+              "on-primary-fixed": "#054e12",
+              "on-error-container": "#520c00",
+              "tertiary-fixed-dim": "#d9e6da",
+              "on-surface-variant": "#5a5c5c",
+              "surface-bright": "#f6f6f6",
+              "inverse-surface": "#0c0f0f",
+              "tertiary-fixed": "#e7f4e8",
+              "on-secondary-container": "#375a38",
+              "surface-container-highest": "#dbdddd",
+              "on-tertiary-fixed-variant": "#5b675e",
+              "on-error": "#ffefec",
+              "inverse-on-surface": "#9c9d9d",
+              "tertiary-container": "#e7f4e8",
+              "primary-fixed-dim": "#a4eb9c",
+              "on-tertiary": "#e9f6ea",
+              "primary-container": "#b2faa9",
+              "surface-variant": "#dbdddd",
+              "error-container": "#f95630",
+              "surface-dim": "#d3d5d5",
+              "on-background": "#2d2f2f",
+              "surface-container-low": "#f0f1f1",
+              "on-secondary-fixed": "#254727",
+              "inverse-primary": "#b2faa9",
+              "on-tertiary-fixed": "#3f4b42",
+              "outline-variant": "#acadad"
+            },
+            fontFamily: {
+              "headline": ["Plus Jakarta Sans"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .histogram-bar {
+            width: 8px;
+            border-radius: 4px;
+            transition: height 0.3s ease;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface min-h-screen flex flex-col">
+<!-- Top Navigation Anchor (Manual for Focused Screen) -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-6 py-4 bg-white/70 backdrop-blur-xl">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-on-surface">arrow_back</span>
+</button>
+<span class="font-headline font-bold text-lg tracking-tight text-emerald-900">Antigravity</span>
+<div class="w-10"></div> <!-- Spacer for symmetry -->
+</header>
+<main class="flex-1 mt-20 px-6 pb-32 max-w-lg mx-auto w-full">
+<!-- Headline Section -->
+<section class="mt-8 mb-12">
+<h1 class="font-headline text-4xl font-extrabold text-on-surface tracking-tight leading-tight">
+                What's your budget?
+            </h1>
+<p class="mt-3 text-on-surface-variant text-lg">
+                Choose your spending preference.
+            </p>
+</section>
+<!-- Visual Histogram & Slider Container -->
+<section class="glass-card rounded-lg p-8 mb-10 shadow-[0_8px_32px_0_rgba(0,0,0,0.04)] overflow-hidden relative border border-white/40">
+<div class="flex items-end justify-between gap-1 h-32 mb-6">
+<!-- Decorative Histogram -->
+<div class="histogram-bar bg-surface-container-highest h-[20%]" data-alt="Abstract histogram bar low height"></div>
+<div class="histogram-bar bg-surface-container-highest h-[35%]" data-alt="Abstract histogram bar medium low height"></div>
+<div class="histogram-bar bg-primary-container/40 h-[50%]" data-alt="Abstract histogram bar medium height"></div>
+<div class="histogram-bar bg-primary-container h-[75%]" data-alt="Abstract histogram bar medium high height"></div>
+<div class="histogram-bar bg-primary h-full" data-alt="Abstract histogram bar full height"></div>
+<div class="histogram-bar bg-primary-container h-[80%]" data-alt="Abstract histogram bar medium high height"></div>
+<div class="histogram-bar bg-primary-container/40 h-[60%]" data-alt="Abstract histogram bar medium height"></div>
+<div class="histogram-bar bg-surface-container-highest h-[45%]" data-alt="Abstract histogram bar medium low height"></div>
+<div class="histogram-bar bg-surface-container-highest h-[30%]" data-alt="Abstract histogram bar low height"></div>
+<div class="histogram-bar bg-surface-container-highest h-[15%]" data-alt="Abstract histogram bar minimum height"></div>
+</div>
+<!-- Custom Slider -->
+<div class="relative w-full h-8 flex items-center">
+<div class="absolute w-full h-2 bg-surface-container-highest rounded-full"></div>
+<div class="absolute w-1/2 h-2 bg-primary rounded-full"></div>
+<div class="absolute left-1/2 -translate-x-1/2 w-8 h-8 bg-white border-4 border-primary rounded-full shadow-lg cursor-pointer"></div>
+</div>
+<div class="flex justify-between mt-6 px-1">
+<span class="text-on-surface-variant font-semibold">$0</span>
+<span class="text-primary font-bold text-xl">$2,400</span>
+<span class="text-on-surface-variant font-semibold">$10k+</span>
+</div>
+</section>
+<!-- Preference Cards -->
+<div class="space-y-4">
+<!-- Selected Card: Budget -->
+<div class="glass-card flex items-center p-6 rounded-lg border-2 border-primary shadow-sm">
+<div class="w-12 h-12 rounded-xl bg-primary-container flex items-center justify-center mr-4">
+<span class="material-symbols-outlined text-on-primary-container" style="font-variation-settings: 'FILL' 1;">savings</span>
+</div>
+<div class="flex-1">
+<h3 class="font-headline font-bold text-on-surface">Budget</h3>
+<p class="text-sm text-on-surface-variant">Affordable &amp; practical stays</p>
+</div>
+<div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-[16px]">check</span>
+</div>
+</div>
+<!-- Card: Mid-range -->
+<div class="glass-card flex items-center p-6 rounded-lg border border-white/40 shadow-sm hover:bg-white/60 transition-colors">
+<div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center mr-4">
+<span class="material-symbols-outlined text-on-surface-variant">apartment</span>
+</div>
+<div class="flex-1">
+<h3 class="font-headline font-bold text-on-surface">Mid-range</h3>
+<p class="text-sm text-on-surface-variant">Balanced comfort and value</p>
+</div>
+</div>
+<!-- Card: Luxury -->
+<div class="glass-card flex items-center p-6 rounded-lg border border-white/40 shadow-sm hover:bg-white/60 transition-colors">
+<div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center mr-4">
+<span class="material-symbols-outlined text-on-surface-variant">diamond</span>
+</div>
+<div class="flex-1">
+<h3 class="font-headline font-bold text-on-surface">Luxury</h3>
+<p class="text-sm text-on-surface-variant">High-end bespoke experiences</p>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Action Button Container -->
+<div class="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-surface via-surface/90 to-transparent z-40">
+<button class="w-full h-14 bg-primary text-on-primary font-headline font-bold text-lg rounded-lg shadow-[0_12px_24px_rgba(38,104,41,0.25)] flex items-center justify-center gap-2 active:scale-95 transition-transform duration-150">
+            Continue
+            <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</body></html>

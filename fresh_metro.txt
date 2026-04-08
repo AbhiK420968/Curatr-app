@@ -1,0 +1,25 @@
+﻿Starting project at E:\Curatr_app
+env: load .env
+env: export EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY EXPO_PUBLIC_SUPABASE_URL EXPO_PUBLIC_SUPABASE_ANON_KEY
+Starting Metro Bundler
+warning: Bundler cache is empty, rebuilding (this may take a minute)
+Waiting on http://localhost:8081
+Logs for your project will appear below.
+Web Bundled 69621ms E:\Curatr_app\node_modules\expo-router\entry.js (2625 modules)
+Web Bundled 69817ms E:\Curatr_app\node_modules\expo-router\entry.js (1 module)
+Web Bundled 69904ms E:\Curatr_app\node_modules\expo-router\entry.js (1 module)
+Web Bundled 70017ms E:\Curatr_app\node_modules\expo-router\entry.js (1 module)
+Web Bundled 50714ms E:\Curatr_app\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web Bundled 114ms E:\Curatr_app\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web Bundled 103ms E:\Curatr_app\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web Bundled 86ms E:\Curatr_app\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web Bundled 93ms E:\Curatr_app\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web Bundled 381ms E:\Curatr_app\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web Bundled 664ms E:\Curatr_app\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console

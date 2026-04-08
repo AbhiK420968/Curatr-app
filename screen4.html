@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "tertiary-dim": "#47524a",
+              "surface-container-lowest": "#ffffff",
+              "error": "#b02500",
+              "surface": "#f6f6f6",
+              "outline": "#767777",
+              "secondary-dim": "#355736",
+              "primary-fixed": "#b2faa9",
+              "primary": "#266829",
+              "surface-container": "#e7e8e8",
+              "secondary": "#416441",
+              "on-tertiary-container": "#515d54",
+              "on-primary-fixed-variant": "#2a6c2c",
+              "on-primary": "#d1ffc8",
+              "surface-container-high": "#e1e3e3",
+              "tertiary": "#525e55",
+              "primary-dim": "#185c1e",
+              "error-dim": "#b92902",
+              "background": "#f6f6f6",
+              "on-primary-container": "#1f6223",
+              "secondary-fixed": "#c5edc1",
+              "on-secondary": "#d5fed0",
+              "on-surface": "#2d2f2f",
+              "secondary-container": "#c5edc1",
+              "on-secondary-fixed-variant": "#416441",
+              "secondary-fixed-dim": "#b7dfb3",
+              "surface-tint": "#266829",
+              "on-primary-fixed": "#054e12",
+              "on-error-container": "#520c00",
+              "tertiary-fixed-dim": "#d9e6da",
+              "on-surface-variant": "#5a5c5c",
+              "surface-bright": "#f6f6f6",
+              "inverse-surface": "#0c0f0f",
+              "tertiary-fixed": "#e7f4e8",
+              "on-secondary-container": "#375a38",
+              "surface-container-highest": "#dbdddd",
+              "on-tertiary-fixed-variant": "#5b675e",
+              "on-error": "#ffefec",
+              "inverse-on-surface": "#9c9d9d",
+              "tertiary-container": "#e7f4e8",
+              "primary-fixed-dim": "#a4eb9c",
+              "on-tertiary": "#e9f6ea",
+              "primary-container": "#b2faa9",
+              "surface-variant": "#dbdddd",
+              "error-container": "#f95630",
+              "surface-dim": "#d3d5d5",
+              "on-background": "#2d2f2f",
+              "surface-container-low": "#f0f1f1",
+              "on-secondary-fixed": "#254727",
+              "inverse-primary": "#b2faa9",
+              "on-tertiary-fixed": "#3f4b42",
+              "outline-variant": "#acadad"
+            },
+            fontFamily: {
+              "headline": ["Plus Jakarta Sans"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface min-h-screen flex flex-col items-center">
+<!-- Top Navigation Suppressed for Onboarding/Task Focused Journey -->
+<main class="w-full max-w-lg px-6 pt-12 pb-32 flex flex-col min-h-screen relative overflow-hidden">
+<!-- Background Artistic Elements (Digital Naturalist) -->
+<div class="absolute -top-24 -right-24 w-64 h-64 bg-primary-container/20 rounded-full blur-3xl"></div>
+<div class="absolute top-1/2 -left-32 w-80 h-80 bg-secondary-container/10 rounded-full blur-3xl"></div>
+<!-- Progress Indicator -->
+<div class="w-full flex justify-between items-center mb-10 relative z-10">
+<div class="flex-1 h-1.5 bg-surface-container-high rounded-full overflow-hidden mr-2">
+<div class="w-2/3 h-full bg-primary rounded-full"></div>
+</div>
+<span class="text-on-surface-variant font-label text-xs font-semibold uppercase tracking-widest">Step 2 of 3</span>
+</div>
+<!-- Header -->
+<header class="mb-12 relative z-10">
+<h1 class="font-headline text-4xl font-extrabold text-on-surface tracking-tight leading-tight mb-4">
+                What are your interests?
+            </h1>
+<p class="text-on-surface-variant text-lg leading-relaxed max-w-[90%]">
+                We'll use these to curate the perfect travel recommendations just for you.
+            </p>
+</header>
+<!-- Interests Grid (Asymmetric Editorial Style) -->
+<div class="flex flex-wrap gap-4 relative z-10">
+<!-- Active Interest -->
+<button class="flex items-center gap-3 px-6 py-4 bg-primary text-on-primary rounded-lg shadow-lg shadow-primary/20 transition-transform active:scale-95 duration-150">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">surfing</span>
+<span class="font-semibold tracking-wide">Surfing</span>
+</button>
+<!-- Inactive Glass Interest -->
+<button class="flex items-center gap-3 px-6 py-4 glass-card border border-white/40 text-on-surface rounded-lg hover:bg-white/60 transition-all active:scale-95 duration-150">
+<span class="material-symbols-outlined text-primary">nightlife</span>
+<span class="font-medium">Nightlife</span>
+</button>
+<!-- Inactive Glass Interest -->
+<button class="flex items-center gap-3 px-6 py-4 glass-card border border-white/40 text-on-surface rounded-lg hover:bg-white/60 transition-all active:scale-95 duration-150">
+<span class="material-symbols-outlined text-primary">nature_people</span>
+<span class="font-medium">Wildlife</span>
+</button>
+<!-- Active Interest -->
+<button class="flex items-center gap-3 px-6 py-4 bg-primary text-on-primary rounded-lg shadow-lg shadow-primary/20 transition-transform active:scale-95 duration-150">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">museum</span>
+<span class="font-semibold tracking-wide">Museums</span>
+</button>
+<!-- Inactive Glass Interest -->
+<button class="flex items-center gap-3 px-6 py-4 glass-card border border-white/40 text-on-surface rounded-lg hover:bg-white/60 transition-all active:scale-95 duration-150">
+<span class="material-symbols-outlined text-primary">hiking</span>
+<span class="font-medium">Hiking</span>
+</button>
+<!-- Inactive Glass Interest -->
+<button class="flex items-center gap-3 px-6 py-4 glass-card border border-white/40 text-on-surface rounded-lg hover:bg-white/60 transition-all active:scale-95 duration-150">
+<span class="material-symbols-outlined text-primary">restaurant</span>
+<span class="font-medium">Fine Dining</span>
+</button>
+<!-- Inactive Glass Interest -->
+<button class="flex items-center gap-3 px-6 py-4 glass-card border border-white/40 text-on-surface rounded-lg hover:bg-white/60 transition-all active:scale-95 duration-150">
+<span class="material-symbols-outlined text-primary">beach_access</span>
+<span class="font-medium">Relaxation</span>
+</button>
+<!-- Inactive Glass Interest -->
+<button class="flex items-center gap-3 px-6 py-4 glass-card border border-white/40 text-on-surface rounded-lg hover:bg-white/60 transition-all active:scale-95 duration-150">
+<span class="material-symbols-outlined text-primary">architecture</span>
+<span class="font-medium">Photography</span>
+</button>
+<!-- Inactive Glass Interest -->
+<button class="flex items-center gap-3 px-6 py-4 glass-card border border-white/40 text-on-surface rounded-lg hover:bg-white/60 transition-all active:scale-95 duration-150">
+<span class="material-symbols-outlined text-primary">local_activity</span>
+<span class="font-medium">History</span>
+</button>
+<!-- Inactive Glass Interest -->
+<button class="flex items-center gap-3 px-6 py-4 glass-card border border-white/40 text-on-surface rounded-lg hover:bg-white/60 transition-all active:scale-95 duration-150">
+<span class="material-symbols-outlined text-primary">directions_bike</span>
+<span class="font-medium">Adventure</span>
+</button>
+</div>
+<!-- Featured Section Asymmetric UI -->
+<div class="mt-12 relative z-10">
+<p class="font-label text-[10px] font-extrabold uppercase tracking-[0.2em] text-on-surface-variant mb-6">Trending Journeys</p>
+<div class="grid grid-cols-2 gap-4">
+<div class="aspect-[3/4] rounded-lg overflow-hidden relative group">
+<img alt="Paris architectural view" class="w-full h-full object-cover" data-alt="Modern Parisian architecture and city street view" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBdv5aPIQx-v3KtngYv1LKkbXnVtxqsvWK5HwP7TapCa6DJFkenOO74Kr_PKCSCOj33qofYdPGmtIWOGDtNjXyPKp9iZcDuO_ApWxVmE-vRl6oosWnCTArEswqaIh9r8Jt2nx1JZFGMGUeiaQ-LVDHF6xKcYOVheMiczUukblE_GhvydXLwftdarGRa9YUwf9AmCsno4oq0NMcW4rCAh7oJCqJ06OZVbv_bnE29V-xfGNBl3dgqiwPIjHh4-AelVoTgWOPUJcKrfKs"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-4">
+<span class="text-white font-semibold text-sm">Art &amp; Design</span>
+</div>
+</div>
+<div class="aspect-[3/4] rounded-lg overflow-hidden relative translate-y-6">
+<img alt="Tropical beach coast" class="w-full h-full object-cover" data-alt="Serene tropical beach with crystal clear water" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBINZAXBjbVb5jj_xFyxKitnOLKfMspavmi7ACc1LQza7t4DDR6MQ5RDX0QLCLcFDwLWVJg-6muhboNINsMZwaiihADhQ0LAdqUvNhQt0ZhyZyYJMgc46am9-FyMk85ylHe7_Wx6WLIPADhmx16SSLv1AVRwvc0BjqVurlKWwsaActCxwCVs2Caeg7waCKjkg2Dt5inUY3IEjHVUIgMBzC_1IURlT6PraHNfWk799Uv5dRRRmYR3vsumxUVHAOlzPENHCmlCY6gGng"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-4">
+<span class="text-white font-semibold text-sm">Coastal Life</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Action (The Continue Button) -->
+<div class="fixed bottom-0 left-0 right-0 p-8 glass-card border-t border-white/20 z-50 flex justify-center">
+<button class="w-full max-w-md h-14 bg-primary text-on-primary rounded-lg font-headline font-bold text-lg tracking-tight flex items-center justify-center gap-2 shadow-[0_20px_40px_rgba(38,104,41,0.2)] active:scale-95 transition-transform duration-150">
+                Continue
+                <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</main>
+<!-- Bottom Navigation Suppressed as per the UX Goal for focused journey -->
+</body></html>

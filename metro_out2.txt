@@ -1,0 +1,31 @@
+﻿Starting project at E:\Curatr_app
+env: load .env
+env: export EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY EXPO_PUBLIC_SUPABASE_URL EXPO_PUBLIC_SUPABASE_ANON_KEY
+ΓÇ║ Port 8081 is being used by another process
+node.exe : Input is 
+required, but 'npx 
+expo' is in 
+non-interactive mode.
+At line:1 char:1
++ & "D:\/node.exe" "D:\
+/node_modules/npm/bin/n
+px-cli.js" expo start 
+-c  ...
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~
+    + CategoryInfo     
+         : 
+NotSpecified: (Inp    
+ut is requir...teracti 
+   ve mode.:String) 
+[], R    emoteException
+    + 
+FullyQualifiedErrorI   
+ d : NativeCommandError
+ 
+Required input:
+> Use port 8082 
+instead?
+ΓÇ║ Skipping dev server

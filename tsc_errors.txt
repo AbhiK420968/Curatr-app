@@ -1,0 +1,1 @@
+﻿services/puterItineraryService.ts(334,13): error TS2353: Object literal may only specify known properties, and 'localInfo' does not exist in type 'Itinerary & { id: string; userId: string; createdAt: string; tips: string[]; }'.

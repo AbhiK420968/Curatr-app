@@ -1,0 +1,41 @@
+﻿Starting project at E:\Curatr_app
+env: load .env
+env: export EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY EXPO_PUBLIC_SUPABASE_URL EXPO_PUBLIC_SUPABASE_ANON_KEY
+Starting Metro Bundler
+warning: Bundler cache is empty, rebuilding (this may take a minute)
+Waiting on http://localhost:8081
+Logs for your project will appear below.
+Web Bundled 45020ms E:\Curatr_app\node_modules\expo-router\entry.js (2625 modules)
+Web Bundled 45203ms E:\Curatr_app\node_modules\expo-router\entry.js (1 module)
+Web Bundled 45286ms E:\Curatr_app\node_modules\expo-router\entry.js (1 module)
+Web Bundled 45381ms E:\Curatr_app\node_modules\expo-router\entry.js (1 module)
+Web Bundled 45599ms E:\Curatr_app\node_modules\expo-router\entry.js (1 module)
+Web Bundled 36470ms E:\Curatr_app\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+ LOG  [web] Logs will appear in the browser console
+error: SyntaxError: E:\Curatr_app\app\index.tsx: Unexpected token (71:0)
+
+  69 |     },
+  70 | });
+> 71 |
+     | ^
+Web Bundled 79ms E:\Curatr_app\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web Bundled 99ms E:\Curatr_app\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web Bundled 91ms E:\Curatr_app\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web Bundled 724ms E:\Curatr_app\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web Bundled 184ms E:\Curatr_app\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web Bundled 697ms E:\Curatr_app\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web Bundled 124ms E:\Curatr_app\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web Bundled 111ms E:\Curatr_app\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web Bundled 216ms E:\Curatr_app\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web Bundled 413ms E:\Curatr_app\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
