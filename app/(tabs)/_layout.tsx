@@ -1,15 +1,14 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Tabs, usePathname } from 'expo-router';
 import { View, StyleSheet, Platform, TouchableOpacity, Animated, Easing } from 'react-native';
-import { Home, Compass, PlusCircle, User, LayoutGrid, ChevronRight, Receipt } from 'lucide-react-native';
+import { Home, Compass, PlusCircle, User, Receipt, ChevronRight } from 'lucide-react-native';
 import { Colors, FontFamily, FontSize, Shadows } from '@/constants';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 
 const TABS = [
     { name: 'index', icon: Home, title: 'Home' },
-    { name: 'explore', icon: Compass, title: 'Explore' },
     { name: 'create', icon: PlusCircle, title: 'Create' },
-    { name: 'trips', icon: LayoutGrid, title: 'Trips' },
+    { name: 'explore', icon: Compass, title: 'Explore' },
     { name: 'splitwise', icon: Receipt, title: 'Splitwise' },
     { name: 'profile', icon: User, title: 'Profile' },
 ];
@@ -161,9 +160,8 @@ export default function TabLayout() {
             tabBar={(props) => <NeumorphicTabBar {...props} />}
         >
             <Tabs.Screen name="index" options={{ title: 'Home' }} />
-            <Tabs.Screen name="explore" options={{ title: 'Explore' }} />
             <Tabs.Screen name="create" options={{ title: 'Create' }} />
-            <Tabs.Screen name="trips" options={{ title: 'Trips' }} />
+            <Tabs.Screen name="explore" options={{ title: 'Explore' }} />
             <Tabs.Screen name="splitwise" options={{ title: 'Splitwise' }} />
             <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
         </Tabs>
@@ -190,8 +188,6 @@ const styles = StyleSheet.create({
         shadowOpacity: 1,
         shadowRadius: 12,
         elevation: 10,
-        // Adding a second (highlight) shadow isn't natively supported in RN,
-        // so we increase the base shadow + light bg for the neumorphic feel
     },
     iconsRow: {
         flexDirection: 'row',

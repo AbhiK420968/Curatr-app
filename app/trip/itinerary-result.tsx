@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import {
-    View, Text, StyleSheet, TouchableOpacity, ScrollView,
+    View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated,
     TextInput, Alert, useWindowDimensions, Platform, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,7 +17,7 @@ import {
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import type { Activity, DayPlan } from '@/types';
-import { fetchWeather, WeatherForecast, enrichActivityWithFoursquare, optimizeRouteWithOSRM } from '@/services/integrationService';
+import { fetchWeather, WeatherForecast, enrichActivityWithGooglePlaces, optimizeRouteWithOSRM } from '@/services/integrationService';
 import { Image } from 'react-native';
 
 // ── Platform-safe WebView wrapper ──
@@ -147,118 +147,45 @@ function ActivityCard({
     };
 
     return (
-        <TouchableOpacity style={styles.activityRow} onPress={onTap} activeOpacity={0.85}>
-            {/* Timeline column */}
-            <View style={styles.timelineCol}>
-                <View style={[styles.timelineDot, { backgroundColor: themeColor }]}>
-                    <Text style={styles.timelineDotText}>{index + 1}</Text>
+        <View>
+            <TouchableOpacity style={styles.activityRow} onPress={onTap} activeOpacity={0.85}>
+                {/* Square Image Thumbnail */}
+                <View style={styles.activityImageContainer}>
+                    {activity.imageUrl ? (
+                        <Image source={{ uri: activity.imageUrl }} style={styles.activityImage} resizeMode="cover" />
+                    ) : (
+                        <View style={[styles.activityImagePlaceholder, { backgroundColor: themeColor + '20' }]}>
+                            <MapPin size={24} color={themeColor} />
+                        </View>
+                    )}
                 </View>
-                <View style={[styles.timelineLine, { backgroundColor: themeColor + '30' }]} />
-            </View>
 
-            {/* Card */}
-            <View style={[styles.activityCard, { borderLeftColor: themeColor }]}>
-                {editing ? (
-                    <View style={styles.editForm}>
-                        <TextInput style={styles.editInput} value={title} onChangeText={setTitle}
-                            placeholder="Activity title" placeholderTextColor={Colors.textMuted} />
-                        <TextInput style={[styles.editInput, { height: 64 }]} value={desc}
-                            onChangeText={setDesc} placeholder="Description" multiline
-                            placeholderTextColor={Colors.textMuted} />
-                        <View style={styles.editRow}>
-                            <TextInput style={[styles.editInput, { flex: 1 }]} value={time}
-                                onChangeText={setTime} placeholder="Time (e.g. 9:00 AM)"
-                                placeholderTextColor={Colors.textMuted} />
-                            <TextInput style={[styles.editInput, { flex: 1 }]} value={cost}
-                                onChangeText={setCost} placeholder="Cost (e.g. ₹500)"
-                                placeholderTextColor={Colors.textMuted} />
-                        </View>
-                        <View style={{ position: 'relative', zIndex: 10 }}>
-                            <TextInput
-                                style={[styles.editInput, { marginBottom: 0 }]}
-                                value={locationInput}
-                                onChangeText={(text) => {
-                                    setLocationInput(text);
-                                    setShowSuggestions(true);
-                                }}
-                                onFocus={() => setShowSuggestions(true)}
-                                placeholder="Location (Search near destination)"
-                                placeholderTextColor={Colors.textMuted}
-                            />
-                            {isSearching && (
-                                <ActivityIndicator style={{ position: 'absolute', right: 12, top: 12 }} size="small" color={themeColor} />
-                            )}
-                            {showSuggestions && suggestions.length > 0 && (
-                                <View style={styles.suggestionsContainer}>
-                                    {suggestions.map((s, i) => (
-                                        <TouchableOpacity
-                                            key={i}
-                                            style={styles.suggestionItem}
-                                            onPress={() => selectLocation(s)}
-                                        >
-                                            <MapPin size={14} color={Colors.textSecondary} />
-                                            <View style={{ flex: 1 }}>
-                                                <Text style={styles.suggestionTitle} numberOfLines={1}>
-                                                    {s.properties.name || s.properties.street || 'Place'}
-                                                </Text>
-                                                <Text style={styles.suggestionText} numberOfLines={1}>
-                                                    {s.properties.formatted}
-                                                </Text>
-                                            </View>
-                                        </TouchableOpacity>
-                                    ))}
-                                </View>
-                            )}
-                        </View>
-                        <View style={styles.editActions}>
-                            <TouchableOpacity style={[styles.editActionBtn, { backgroundColor: themeColor }]} onPress={handleSave}>
-                                <Check size={14} color="#FFF" />
-                                <Text style={styles.editActionText}>Save</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={[styles.editActionBtn, { backgroundColor: Colors.textMuted + 'CC' }]} onPress={handleCancel}>
-                                <X size={14} color="#FFF" />
-                                <Text style={styles.editActionText}>Cancel</Text>
-                            </TouchableOpacity>
-                        </View>
+                {/* Content */}
+                <View style={styles.activityContent}>
+                    <View style={styles.activityTitleRow}>
+                        <MapPin size={12} color={Colors.textSecondary} style={{ marginRight: 4, marginTop: 2 }} />
+                        <Text style={styles.activityTitle} numberOfLines={1}>{activity.title}</Text>
                     </View>
-                ) : (
-                    <>
-                        <View style={styles.activityHeader}>
-                            <Text style={styles.activityTitle} numberOfLines={2}>{activity.title}</Text>
-                            <View style={styles.activityActions}>
-                                <TouchableOpacity onPress={() => setEditing(true)} hitSlop={10} style={styles.actionIconBtn}>
-                                    <Edit3 size={15} color={Colors.textMuted} />
-                                </TouchableOpacity>
-                                <TouchableOpacity onPress={onDelete} hitSlop={10} style={styles.actionIconBtn}>
-                                    <Trash2 size={15} color={Colors.error} />
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                        {activity.imageUrl && (
-                            <Image 
-                                source={{ uri: activity.imageUrl }} 
-                                style={[styles.activityImage, { borderColor: themeColor + '30' }]} 
-                                resizeMode="cover" 
-                            />
-                        )}
-                        <Text style={styles.activityDesc} numberOfLines={3}>{activity.description}</Text>
-                        <View style={styles.activityMeta}>
-                            <View style={styles.metaChip}>
-                                <Clock size={11} color={themeColor} />
-                                <Text style={[styles.metaText, { color: themeColor }]}>{activity.time}</Text>
-                            </View>
-                            <View style={styles.metaChip}>
-                                <DollarSign size={11} color={themeColor} />
-                                <Text style={[styles.metaText, { color: themeColor }]}>{activity.estimatedCost}</Text>
-                            </View>
-                            {activity.duration && (
-                                <Text style={styles.metaDuration}>{activity.duration}</Text>
-                            )}
-                        </View>
-                    </>
-                )}
+                    <View style={styles.activityTimeRow}>
+                        <Clock size={10} color={Colors.textMuted} style={{ marginRight: 4 }} />
+                        <Text style={styles.activityTime}>{activity.time}</Text>
+                    </View>
+                </View>
+
+                {/* Details Button */}
+                <TouchableOpacity style={styles.detailsBtn} onPress={() => setEditing(true)}>
+                    <Text style={styles.detailsBtnText}>Details</Text>
+                </TouchableOpacity>
+            </TouchableOpacity>
+            
+            {/* Distance Marker / Dotted Line (shown below all but last) */}
+            <View style={styles.distanceMarkerRow}>
+                <View style={styles.dottedLineContainer}>
+                    <View style={[styles.dottedLine, { borderColor: Colors.borderLight }]} />
+                </View>
+                <Text style={styles.distanceText}>0.25 mi</Text>
             </View>
-        </TouchableOpacity>
+        </View>
     );
 }
 
@@ -266,9 +193,11 @@ function ActivityCard({
 export default function ItineraryResultScreen() {
     const router = useRouter();
     const { itinerary } = useItineraryContext();
-    const { width } = useWindowDimensions();
+    const { width, height } = useWindowDimensions();
 
     const webviewRef = useRef<any>(null);
+    const scrollY = useRef(new Animated.Value(0)).current;
+
     const [isSaving, setIsSaving] = useState(false);
     const [isSharing, setIsSharing] = useState(false);
     const [toast, setToast] = useState({ visible: false, message: '' });
@@ -385,7 +314,7 @@ export default function ItineraryResultScreen() {
                     const day = nextDays[d];
                     const enrichedActs: any[] = [];
                     
-                    // 1. Enrich each activity natively with Foursquare
+                    // 1. Enrich each activity natively with Google Places
                     for (const act of day.activities) {
                         const skipEnrich = typeof act.location === 'object' && act.location.latitude;
                         if (skipEnrich) {
@@ -393,7 +322,7 @@ export default function ItineraryResultScreen() {
                             continue;
                         }
 
-                        const data = await enrichActivityWithFoursquare(act, dest);
+                        const data = await enrichActivityWithGooglePlaces(act, dest);
                         if (data && data.lat && data.lng) {
                             const newAct = {
                                 ...act, 
@@ -664,8 +593,15 @@ export default function ItineraryResultScreen() {
                 </ScrollView>
             </View>
 
-            {/* Map */}
-            <View style={[styles.mapContainer, { height: width * 0.58 }]}>
+            {/* Map - Animated Parallax */}
+            <Animated.View style={[styles.mapContainer, { 
+                position: 'absolute', top: 120, left: 0, right: 0, zIndex: 0,
+                height: scrollY.interpolate({ 
+                    inputRange: [0, height * 0.6], 
+                    outputRange: [height - 120, height * 0.4], 
+                    extrapolate: 'clamp' 
+                }) 
+            }]}>
                 <PlatformWebView
                     key={`map-${selectedDay}-${mapKey}`}
                     html={mapHtml}
@@ -679,36 +615,47 @@ export default function ItineraryResultScreen() {
                         </Text>
                     </View>
                 )}
-            </View>
+            </Animated.View>
 
             {/* Itinerary Cards - scrollable sheet */}
-            <ScrollView
-                style={styles.sheet}
-                contentContainerStyle={styles.sheetContent}
+            <Animated.ScrollView
+                style={[styles.sheet, { zIndex: 1 }]}
+                contentContainerStyle={[styles.sheetContent, { paddingTop: height - 160 }]}
                 showsVerticalScrollIndicator={false}
-            >
-                {/* Day Theme */}
-                {currentDay && (
-                    <View style={styles.dayThemeRow}>
-                        <View style={[styles.dayThemeBadge, { backgroundColor: theme.primary }]}>
-                            <Text style={styles.dayThemeBadgeText}>Day {currentDay.day}</Text>
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.dayThemeText}>{currentDay.theme}</Text>
-                            {isOptimizing && (
-                                <Text style={{ fontFamily: FontFamily.medium, fontSize: 11, color: Colors.textMuted, marginTop: 2 }}>
-                                    ✨ Generating optimized route & images...
-                                </Text>
-                            )}
-                        </View>
-                    </View>
+                scrollEventThrottle={16}
+                onScroll={Animated.event(
+                    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+                    { useNativeDriver: false }
                 )}
+            >
+                {/* Content Wrapper to act as a solid background sheet */}
+                <View style={{ backgroundColor: Colors.background, minHeight: height, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: Spacing.lg, paddingBottom: 160, ...Shadows.lg }}>
+                    
+                    {/* Handle bar indicator */}
+                    <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: Colors.borderLight, alignSelf: 'center', marginBottom: 20 }} />
 
-                {/* Activities */}
-                {(currentDay?.activities || []).map((activity, idx) => (
-                    <ActivityCard
-                        key={`${selectedDay}-${idx}-${activity?.title || idx}`}
-                        activity={activity}
+                    {/* Day Theme */}
+                    {currentDay && (
+                        <View style={styles.dayThemeRow}>
+                            <View style={[styles.dayThemeBadge, { backgroundColor: theme.primary }]}>
+                                <Text style={styles.dayThemeBadgeText}>Day {currentDay.day}</Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.dayThemeText}>{currentDay.theme}</Text>
+                                {isOptimizing && (
+                                    <Text style={{ fontFamily: FontFamily.medium, fontSize: 11, color: Colors.textMuted, marginTop: 2 }}>
+                                        ✨ Generating optimized route & images...
+                                    </Text>
+                                )}
+                            </View>
+                        </View>
+                    )}
+
+                    {/* Activities */}
+                    {(currentDay?.activities || []).map((activity, idx) => (
+                        <ActivityCard
+                            key={`${selectedDay}-${idx}-${activity?.title || idx}`}
+                            activity={activity}
                         index={idx}
                         themeColor={theme.primary}
                         destination={dest}
@@ -771,7 +718,8 @@ export default function ItineraryResultScreen() {
                         ))}
                     </View>
                 )}
-            </ScrollView>
+                </View>
+            </Animated.ScrollView>
 
             {/* Toast */}
             <Toast message={toast.message} visible={toast.visible} />
@@ -816,11 +764,11 @@ const styles = StyleSheet.create({
     headerRightBtns: { flexDirection: 'row', gap: 6 },
     
     // Weather
-    weatherScroll: { flexGrow: 0, paddingVertical: 8, backgroundColor: Colors.surface, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
+    weatherScroll: { flexGrow: 0, paddingVertical: 8, backgroundColor: Colors.surface },
     weatherCard: { 
         alignItems: 'center', backgroundColor: Colors.background, 
         paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, 
-        borderWidth: 1, borderColor: '#EAEDF0',
+        ...Shadows.sm,
         minWidth: 70 
     },
     weatherDay: { fontFamily: FontFamily.semiBold, fontSize: 11, color: Colors.textSecondary },
@@ -829,7 +777,7 @@ const styles = StyleSheet.create({
     weatherCond: { fontFamily: FontFamily.medium, fontSize: 9, color: Colors.textMuted, maxWidth: 60, textAlign: 'center' },
 
     // Day Tabs
-    dayTabsContainer: { backgroundColor: Colors.surface, borderBottomWidth: 1 },
+    dayTabsContainer: { backgroundColor: Colors.surface, ...Shadows.sm, paddingBottom: 4 },
     dayTabsScroll: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, gap: 8, alignItems: 'center' },
     dayTab: {
         flexDirection: 'row', alignItems: 'center', gap: 5,
@@ -875,31 +823,23 @@ const styles = StyleSheet.create({
     emptyActivitiesText: { fontFamily: FontFamily.medium, fontSize: FontSize.sm, color: Colors.textMuted },
 
     // Activity row
-    activityRow: { flexDirection: 'row', marginBottom: Spacing.md, minHeight: 90 },
-    timelineCol: { width: 36, alignItems: 'center' },
-    timelineDot: {
-        width: 28, height: 28, borderRadius: 14,
-        justifyContent: 'center', alignItems: 'center', zIndex: 1,
-    },
-    timelineDotText: { fontFamily: FontFamily.bold, fontSize: 11, color: '#FFF' },
-    timelineLine: { flex: 1, width: 2 },
+    activityRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: 16, padding: 12, ...Shadows.sm, shadowOpacity: 0.05, elevation: 2 },
+    activityImageContainer: { width: 64, height: 64, borderRadius: 8, overflow: 'hidden', marginRight: 12 },
+    activityImage: { width: '100%', height: '100%' },
+    activityImagePlaceholder: { flex: 1, justifyContent: 'center', alignItems: 'center', borderRadius: 8 },
+    activityContent: { flex: 1, justifyContent: 'center' },
+    activityTitleRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 4 },
+    activityTitle: { fontFamily: FontFamily.semiBold, fontSize: 15, color: Colors.text, flexShrink: 1 },
+    activityTimeRow: { flexDirection: 'row', alignItems: 'center' },
+    activityTime: { fontFamily: FontFamily.medium, fontSize: 13, color: Colors.textMuted },
+    detailsBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: Colors.borderLight },
+    detailsBtnText: { fontFamily: FontFamily.semiBold, fontSize: 12, color: Colors.textSecondary },
 
-    // Activity card
-    activityCard: {
-        flex: 1, marginLeft: Spacing.sm, backgroundColor: Colors.surface,
-        borderRadius: BorderRadius.lg, padding: Spacing.md,
-        borderLeftWidth: 3, ...Shadows.sm, shadowOpacity: 0.06,
-    },
-    activityHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 },
-    activityTitle: { fontFamily: FontFamily.bold, fontSize: FontSize.base, color: Colors.text, flex: 1, marginRight: 8 },
-    activityActions: { flexDirection: 'row', gap: 6 },
-    actionIconBtn: { padding: 4 },
-    activityImage: { width: '100%', height: 140, borderRadius: 8, borderWidth: 1, marginBottom: 10 },
-    activityDesc: { fontFamily: FontFamily.regular, fontSize: FontSize.sm, color: Colors.textSecondary, lineHeight: 20, marginBottom: 8 },
-    activityMeta: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    metaChip: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    metaText: { fontFamily: FontFamily.semiBold, fontSize: FontSize.xs },
-    metaDuration: { fontFamily: FontFamily.medium, fontSize: FontSize.xs, color: Colors.textMuted },
+    // Distance marker / dotted line
+    distanceMarkerRow: { flexDirection: 'row', alignItems: 'center', height: 40, marginLeft: 32 }, // 12 padding + 32 (half image)
+    dottedLineContainer: { width: 2, height: '100%', alignItems: 'center', overflow: 'hidden' },
+    dottedLine: { height: 100, width: 2, borderWidth: 1, borderStyle: 'dotted', borderRadius: 1 },
+    distanceText: { fontFamily: FontFamily.medium, fontSize: 13, color: Colors.textMuted, marginLeft: 20 },
 
     // Edit form
     editForm: { gap: 8 },
@@ -907,7 +847,6 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.background, borderRadius: BorderRadius.md,
         paddingHorizontal: 12, paddingVertical: 8,
         fontFamily: FontFamily.medium, fontSize: FontSize.sm, color: Colors.text,
-        borderWidth: 1, borderColor: Colors.borderLight,
     },
     editRow: { flexDirection: 'row', gap: 8 },
     editActions: { flexDirection: 'row', gap: 8, marginTop: 4 },
@@ -921,12 +860,12 @@ const styles = StyleSheet.create({
     suggestionsContainer: {
         position: 'absolute', top: '100%', left: 0, right: 0,
         backgroundColor: Colors.surface, borderRadius: BorderRadius.md,
-        borderWidth: 1, borderColor: Colors.borderLight, ...Shadows.sm,
+        ...Shadows.md,
         marginTop: 4, zIndex: 100, maxHeight: 200, overflow: 'hidden',
     },
     suggestionItem: {
         flexDirection: 'row', alignItems: 'center', gap: 10,
-        padding: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: Colors.borderLight,
+        padding: 12,
     },
     suggestionTitle: { fontFamily: FontFamily.semiBold, fontSize: FontSize.sm, color: Colors.text },
     suggestionText: { fontFamily: FontFamily.regular, fontSize: FontSize.xs, color: Colors.textSecondary, marginTop: 2 },
@@ -942,7 +881,7 @@ const styles = StyleSheet.create({
     // Budget summary
     budgetSummary: {
         backgroundColor: Colors.surface, borderRadius: BorderRadius.lg, padding: Spacing.lg,
-        borderWidth: 1, marginBottom: Spacing.lg,
+        ...Shadows.sm, marginBottom: Spacing.lg,
     },
     budgetSummaryTitle: { fontFamily: FontFamily.medium, fontSize: FontSize.sm, color: Colors.textMuted, marginBottom: 4, textAlign: 'center' },
     budgetSummaryAmount: { fontFamily: FontFamily.bold, fontSize: FontSize['2xl'], textAlign: 'center', marginBottom: Spacing.md },
@@ -954,7 +893,7 @@ const styles = StyleSheet.create({
     // Tips
     tipsCard: {
         backgroundColor: Colors.surface, borderRadius: BorderRadius.lg, padding: Spacing.md,
-        borderWidth: 1, marginBottom: Spacing.lg,
+        ...Shadows.sm, marginBottom: Spacing.lg,
     },
     tipsTitle: { fontFamily: FontFamily.semiBold, fontSize: FontSize.base, color: Colors.text, marginBottom: Spacing.sm },
     tipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 8 },
@@ -966,7 +905,7 @@ const styles = StyleSheet.create({
         position: 'absolute', bottom: 0, left: 0, right: 0,
         paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: 36,
         backgroundColor: 'rgba(255,255,255,0.97)',
-        borderTopWidth: 1, borderTopColor: Colors.borderLight,
+        ...Shadows.lg,
     },
     saveBtn: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',

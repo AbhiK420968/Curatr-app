@@ -6,13 +6,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, FontFamily, FontSize, Spacing, BorderRadius, Shadows } from '@/constants';
 import {
-    Sparkles, MapPin, Download, ArrowRight, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Wallet
+    Sparkles, MapPin, Download, ArrowRight, ChevronLeft, ChevronRight, Calendar as CalendarIcon,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { Calendar } from 'react-native-calendars';
-import Slider from '@react-native-community/slider';
 import { generateGeminiItinerary } from '@/services/geminiService';
 import { saveProfile, loadProfile } from '@/services/profileStore';
 import { logRegeneration } from '@/services/sessionLog';
@@ -124,7 +124,7 @@ type ScreenMode = 'home' | 'generate' | 'generating';
 export default function CreateScreen() {
     const router = useRouter();
     const { setItinerary } = useItineraryContext();
-    const { width } = useWindowDimensions();
+    const { width, height } = useWindowDimensions();
 
     const [mode, setMode] = useState<ScreenMode>('home');
 
@@ -134,16 +134,13 @@ export default function CreateScreen() {
     const [geoSuggestions, setGeoSuggestions] = useState<any[]>([]);
     const [isSearchingLocation, setIsSearchingLocation] = useState(false);
     const [selectedLocation, setSelectedLocation] = useState(false);
-    
+
     // Calendar State
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
-    
+
     const [vibeIndex, setVibeIndex] = useState(0);
-    
-    // Budget Slider State (5000 to 100000)
-    const [budgetVal, setBudgetVal] = useState(15000);
-    
+
     const [peopleIndex, setPeopleIndex] = useState(0);
     const [progress, setProgress] = useState(0);
     // Track if we're regenerating (force-skip cache)
@@ -263,20 +260,22 @@ export default function CreateScreen() {
         }
     }, [mode]);
 
-    const handleGenerate = async (forceRefresh = false) => {
+    const handleGenerate = async (forceRefresh = false, prefOverrides?: { budget?: string; duration?: number }) => {
         setMode('generating');
         setProgress(0);
 
-        const duration = (!startDate || !endDate) 
-            ? 1 
-            : Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 3600 * 24)) + 1;
-            
-        const formatBudget = (val: number) => val >= 100000 ? '₹1L+' : `₹${val/1000}k`;
+        const duration = prefOverrides?.duration ?? (
+            dateMode === 'flexible' || !startDate || !endDate
+                ? flexDays
+                : Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 3600 * 24)) + 1
+        );
+
+        const budget = prefOverrides?.budget ?? (budgetCard === 'budget' ? '₹5K–20K' : budgetCard === 'luxury' ? '₹60K+' : '₹20K–60K');
 
         const preferences = {
             destination: destination.trim(),
-            duration: duration,
-            budget: formatBudget(budgetVal),
+            duration,
+            budget,
             travelStyle: VIBES[vibeIndex].key as any,
             interests: [VIBES[vibeIndex].key],
             groupSize: PEOPLE_OPTIONS[peopleIndex],
@@ -288,7 +287,7 @@ export default function CreateScreen() {
 
         // Log regeneration if applicable
         if (forceRefresh) {
-            logRegeneration(destination.trim()).catch(() => {});
+            logRegeneration(destination.trim()).catch(() => { });
         }
 
         try {
@@ -313,12 +312,28 @@ export default function CreateScreen() {
                 router.push('/trip/itinerary-result');
             }, 400);
         } catch (err: any) {
-            setMode('generate');
-            Alert.alert(
-                'Generation Failed',
-                err?.message || 'Could not generate your itinerary. Check your internet connection and try again.',
-                [{ text: 'OK' }]
-            );
+            console.warn('[CreateScreen] Gemini failure, falling back to offline generator:', err?.message);
+            try {
+                const fallbackItinerary = generateOfflineItinerary(preferences);
+                setProgress(100);
+                setTimeout(() => {
+                    setItinerary(fallbackItinerary);
+                    setMode('home');
+                    setStep(0);
+                    setDestination('');
+                    setSelectedLocation(false);
+                    setIsRegenerating(false);
+                    homeAnim.setValue(1);
+                    router.push('/trip/itinerary-result');
+                }, 400);
+            } catch (offlineErr) {
+                setMode('generate');
+                Alert.alert(
+                    'Generation Failed',
+                    err?.message || 'Could not generate your itinerary. Check your API key and internet connection.',
+                    [{ text: 'OK' }]
+                );
+            }
         }
     };
 
@@ -421,8 +436,49 @@ export default function CreateScreen() {
     }
 
     const progressPercent = ((step + 1) / STEP_COUNT) * 100;
-    const stepTitles = ['Where to?', 'How many days?', "What's the vibe?", 'Budget?', 'How many people?'];
-    const stepSubtitles = ['', 'Scroll to pick duration', 'Choose the feel', 'Select spending style', "Who's coming along?"];
+    // ── New Stitch wizard state (MUST be before any early returns) ──
+    const [dateMode, setDateMode] = useState<'calendar' | 'flexible'>('calendar');
+    const [flexDays, setFlexDays] = useState(3);
+    const [travelerType, setTravelerType] = useState('Solo');
+    const [budgetCard, setBudgetCard] = useState('moderate');
+
+    const FLEX_DURATIONS = [
+        { label: '3 Days', days: 3 }, { label: '5 Days', days: 5 },
+        { label: '7 Days', days: 7 }, { label: '10 Days', days: 10 },
+        { label: '2 Weeks', days: 14 }, { label: '3 Weeks', days: 21 },
+    ];
+    const TRAVELER_TYPES = [
+        { key: 'Solo', emoji: '🧳', label: 'Solo' },
+        { key: 'Couple', emoji: '💑', label: 'Couple' },
+        { key: 'Friends', emoji: '👯', label: 'Friends' },
+        { key: 'Family', emoji: '👨\u200d👩\u200d👧', label: 'Family' },
+    ];
+    const BUDGET_CARDS = [
+        { key: 'budget', label: 'Budget', sublabel: '₹5K – 20K', emoji: '🎒', desc: 'Hostels, street food, public transit' },
+        { key: 'moderate', label: 'Moderate', sublabel: '₹20K – 60K', emoji: '✈️', desc: 'Mid-range hotels, cafes, Ola/Uber' },
+        { key: 'luxury', label: 'Luxury', sublabel: '₹60K+', emoji: '👑', desc: '5-star hotels, fine dining, private tours' },
+    ];
+
+    // Derived values (safe to compute here since no hooks below)
+    const derivedBudget = budgetCard === 'budget' ? '₹5K–20K' : budgetCard === 'luxury' ? '₹60K+' : '₹20K–60K';
+    const derivedDuration = dateMode === 'flexible' || !startDate || !endDate
+        ? flexDays
+        : Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 3600 * 24)) + 1;
+
+    const stepTitles = [
+        'Where to?',
+        'When are you going?',
+        "What's your vibe?",
+        "What's your budget?",
+        "Who's joining you?",
+    ];
+    const stepSubtitles = [
+        'Tell us your dream destination',
+        'Choose your travel dates',
+        'Pick the feel of your trip',
+        'Set a spending range',
+        'Select your travel group',
+    ];
 
     // ─────────────────────────────────────────────────────────
     // ── GENERATING view ──
@@ -436,6 +492,9 @@ export default function CreateScreen() {
             inputRange: [0, 1],
             outputRange: ['3%', `${Math.min(progress + 8, 97)}%`],
         });
+        const duration = (dateMode === 'flexible' || !startDate || !endDate)
+            ? flexDays
+            : Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 3600 * 24)) + 1;
         return (
             <View style={styles.generatingContainer}>
                 <SafeAreaView style={styles.generatingContent}>
@@ -443,7 +502,7 @@ export default function CreateScreen() {
                         <Sparkles size={40} color={Colors.primary} />
                         <Text style={styles.generatingTitle}>Curating your trip</Text>
                         <Text style={styles.generatingSubtitle}>
-                            {(!startDate || !endDate) ? 1 : Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 3600 * 24)) + 1} days in {destination}
+                            {duration} day{duration !== 1 ? 's' : ''} in {destination}
                         </Text>
                     </View>
                     <View style={styles.neonBarSection}>
@@ -481,7 +540,6 @@ export default function CreateScreen() {
         }
         if (endDate) {
             marked[endDate] = { endingDay: true, color: Colors.primary, textColor: 'white' };
-            // Fill in between
             let current = new Date(startDate);
             const end = new Date(endDate);
             current.setDate(current.getDate() + 1);
@@ -493,308 +551,480 @@ export default function CreateScreen() {
         }
         return marked;
     };
-    
-    // ── Budget formatting ──
-    const getBudgetLabel = (val: number) => {
-        if (val >= 100000) return '₹1L+ (Luxury Premium)';
-        if (val >= 50000) return `₹${val/1000}k (Premium)`;
-        if (val >= 20000) return `₹${val/1000}k (Moderate)`;
-        return `₹${val/1000}k (Backpacker)`;
-    };
 
     // ─────────────────────────────────────────────────────────
     // ── GENERATE WIZARD view ──
     // ─────────────────────────────────────────────────────────
     if (mode === 'generate') {
         return (
-            <SafeAreaView style={styles.wizardContainer} edges={['top', 'bottom']}>
-                {/* Wizard header */}
-                <View style={styles.wizardHeader}>
-                    <TouchableOpacity onPress={goBack} style={styles.backButton}>
-                        <ChevronLeft size={22} color={Colors.text} />
-                    </TouchableOpacity>
-                    <Text style={styles.stepIndicator}>{step + 1}/{STEP_COUNT}</Text>
-                    <View style={{ width: 40 }} />
-                </View>
+            <View style={styles.wizardContainer}>
+                {/* Same gradient as home */}
+                <LinearGradient
+                    colors={['#a4351c', '#fdb19c', '#ffc4b7']}
+                    start={{ x: 0, y: 1 }}
+                    end={{ x: 1, y: 0 }}
+                    style={StyleSheet.absoluteFill}
+                />
+                <View style={styles.grainOverlay} />
 
-                {/* Progress bar */}
-                <View style={styles.progressContainer}>
-                    <View style={styles.progressBg}>
-                        <View style={[styles.progressFill, { width: `${progressPercent}%` as any }]} />
+                <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
+                    {/* Header */}
+                    <View style={styles.wizardHeader}>
+                        <TouchableOpacity onPress={goBack} style={styles.backButton}>
+                            <ChevronLeft size={22} color="rgba(255,239,236,0.9)" />
+                        </TouchableOpacity>
+                        <Text style={styles.stepIndicator}>{step + 1}/{STEP_COUNT}</Text>
+                        <View style={{ width: 40 }} />
                     </View>
-                </View>
 
-                {/* Step content */}
-                <Animated.View style={[styles.stepContent, { opacity: fadeAnim, transform: [{ translateX: slideAnim }] }]}>
-                    <Text style={styles.stepTitle}>{stepTitles[step]}</Text>
-                    {!!stepSubtitles[step] && (
+                    {/* Progress bar */}
+                    <View style={styles.progressContainer}>
+                        <View style={styles.progressBg}>
+                            <View style={[styles.progressFill, { width: `${progressPercent}%` as any }]} />
+                        </View>
+                    </View>
+
+                    {/* Step content */}
+                    <Animated.ScrollView
+                        style={{ flex: 1 }}
+                        contentContainerStyle={[styles.stepContent]}
+                        showsVerticalScrollIndicator={false}
+                        scrollEnabled={step !== 0}
+                        keyboardShouldPersistTaps="handled"
+                    >
+                        <Text style={styles.stepTitle}>{stepTitles[step]}</Text>
                         <Text style={styles.stepSubtitle}>{stepSubtitles[step]}</Text>
-                    )}
 
-                    {/* Step 0: Destination */}
-                    {step === 0 && (
-                        <View style={styles.destinationContainer}>
-                            <View style={styles.destinationInput}>
-                                <MapPin size={22} color={Colors.primary} />
-                                <TextInput
-                                    style={styles.destinationTextInput}
-                                    placeholder="Kyoto, Japan"
-                                    placeholderTextColor={Colors.textMuted}
-                                    value={destination}
-                                    onChangeText={(val) => { setDestination(val); setSelectedLocation(false); }}
-                                    autoFocus
-                                    autoCapitalize="words"
-                                    returnKeyType="next"
-                                    onSubmitEditing={goNext}
-                                />
+                        {/* ── Step 0: Destination ── */}
+                        {step === 0 && (
+                            <View style={styles.destinationContainer}>
+                                <View style={styles.destinationInput}>
+                                    <MapPin size={22} color="rgba(255,239,236,0.7)" />
+                                    <TextInput
+                                        style={styles.destinationTextInput}
+                                        placeholder="e.g. Tokyo, Bali, Paris"
+                                        placeholderTextColor="rgba(255,239,236,0.4)"
+                                        value={destination}
+                                        onChangeText={(val) => { setDestination(val); setSelectedLocation(false); }}
+                                        autoFocus
+                                        autoCapitalize="words"
+                                        returnKeyType="next"
+                                        onSubmitEditing={goNext}
+                                    />
+                                </View>
+                                {geoSuggestions.length > 0 && (
+                                    <View style={styles.autocompleteContainer}>
+                                        {geoSuggestions.map((feat, idx) => (
+                                            <TouchableOpacity key={idx} style={styles.suggestionItem}
+                                                onPress={() => handleSelectLocation(feat.properties.formatted)}>
+                                                <MapPin size={15} color="#a4351c" />
+                                                <Text style={styles.suggestionText} numberOfLines={1}>
+                                                    {feat.properties.formatted}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                )}
+                                {isSearchingLocation && geoSuggestions.length === 0 && (
+                                    <View style={styles.autocompleteContainer}>
+                                        <ActivityIndicator size="small" color="#a4351c" style={{ margin: Spacing.md }} />
+                                    </View>
+                                )}
                             </View>
-                            {geoSuggestions.length > 0 && (
-                                <View style={styles.autocompleteContainer}>
-                                    {geoSuggestions.map((feat, idx) => (
-                                        <TouchableOpacity key={idx} style={styles.suggestionItem}
-                                            onPress={() => handleSelectLocation(feat.properties.formatted)}>
-                                            <MapPin size={15} color={Colors.textSecondary} />
-                                            <Text style={styles.suggestionText} numberOfLines={1}>
-                                                {feat.properties.formatted}
-                                            </Text>
+                        )}
+
+                        {/* ── Step 1: Dates ── */}
+                        {step === 1 && (
+                            <View style={{ width: '100%' }}>
+                                <View style={styles.dateToggleRow}>
+                                    <TouchableOpacity
+                                        style={[styles.dateToggleBtn, dateMode === 'calendar' && styles.dateToggleBtnActive]}
+                                        onPress={() => setDateMode('calendar')}
+                                    >
+                                        <CalendarIcon size={16} color={dateMode === 'calendar' ? '#a4351c' : 'rgba(255,239,236,0.7)'} />
+                                        <Text style={[styles.dateToggleText, dateMode === 'calendar' && styles.dateToggleTextActive]}>Specific Dates</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[styles.dateToggleBtn, dateMode === 'flexible' && styles.dateToggleBtnActive]}
+                                        onPress={() => setDateMode('flexible')}
+                                    >
+                                        <Text style={[styles.dateToggleText, dateMode === 'flexible' && styles.dateToggleTextActive]}>🗓️  Flexible</Text>
+                                    </TouchableOpacity>
+                                </View>
+
+                                {dateMode === 'calendar' ? (
+                                    <View>
+                                        <View style={styles.dateSummaryRow}>
+                                            <View style={styles.dateSummaryChip}>
+                                                <Text style={styles.dateSummaryLabel}>FROM</Text>
+                                                <Text style={styles.dateSummaryValue}>{startDate || '—'}</Text>
+                                            </View>
+                                            <View style={[styles.dateSummaryChip, { opacity: endDate ? 1 : 0.4 }]}>
+                                                <Text style={styles.dateSummaryLabel}>TO</Text>
+                                                <Text style={styles.dateSummaryValue}>{endDate || '—'}</Text>
+                                            </View>
+                                            {startDate && endDate && (
+                                                <View style={[styles.dateSummaryChip, { backgroundColor: 'rgba(164,53,28,0.3)' }]}>
+                                                    <Text style={[styles.dateSummaryLabel, { color: '#fdb19c' }]}>NIGHTS</Text>
+                                                    <Text style={[styles.dateSummaryValue, { color: '#fdb19c' }]}>
+                                                        {Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000)}
+                                                    </Text>
+                                                </View>
+                                            )}
+                                        </View>
+                                        <View style={{ borderRadius: 20, overflow: 'hidden' }}>
+                                            <Calendar
+                                                markingType={'period'}
+                                                markedDates={getMarkedDates()}
+                                                onDayPress={handleDayPress}
+                                                theme={{
+                                                    backgroundColor: 'rgba(255,255,255,0.9)',
+                                                    calendarBackground: 'rgba(255,255,255,0.9)',
+                                                    textSectionTitleColor: '#a4351c',
+                                                    selectedDayBackgroundColor: '#a4351c',
+                                                    selectedDayTextColor: '#ffffff',
+                                                    todayTextColor: '#a4351c',
+                                                    dayTextColor: '#2c2f30',
+                                                    textDisabledColor: '#bbb',
+                                                    arrowColor: '#a4351c',
+                                                    monthTextColor: '#2c2f30',
+                                                    textDayFontFamily: FontFamily.medium,
+                                                    textMonthFontFamily: FontFamily.bold,
+                                                    textDayHeaderFontFamily: FontFamily.semiBold,
+                                                }}
+                                            />
+                                        </View>
+                                    </View>
+                                ) : (
+                                    <View>
+                                        <Text style={styles.sectionLabel}>How many days?</Text>
+                                        <View style={styles.flexDurationGrid}>
+                                            {FLEX_DURATIONS.map(d => (
+                                                <TouchableOpacity
+                                                    key={d.days}
+                                                    style={[styles.flexDurationChip, flexDays === d.days && styles.flexDurationChipActive]}
+                                                    onPress={() => setFlexDays(d.days)}
+                                                >
+                                                    <Text style={[styles.flexDurationText, flexDays === d.days && styles.flexDurationTextActive]}>{d.label}</Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </View>
+                                        <View style={styles.flexDurationPreview}>
+                                            <Text style={styles.flexDurationPreviewText}>✈️  {flexDays}-day trip to {destination || 'your destination'}</Text>
+                                        </View>
+                                    </View>
+                                )}
+                            </View>
+                        )}
+
+                        {/* ── Step 2: Vibe ── */}
+                        {step === 2 && (
+                            <View style={styles.vibeGrid}>
+                                {VIBES.map((v, i) => (
+                                    <TouchableOpacity
+                                        key={v.key}
+                                        style={[styles.vibeCard, vibeIndex === i && styles.vibeCardActive]}
+                                        onPress={() => setVibeIndex(i)}
+                                        activeOpacity={0.8}
+                                    >
+                                        <Text style={styles.vibeEmoji}>{v.emoji}</Text>
+                                        <Text style={[styles.vibeLabel, vibeIndex === i && styles.vibeLabelActive]}>{v.key}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        )}
+
+                        {/* ── Step 3: Budget ── */}
+                        {step === 3 && (
+                            <View style={styles.budgetCardList}>
+                                {BUDGET_CARDS.map(b => (
+                                    <TouchableOpacity
+                                        key={b.key}
+                                        style={[styles.budgetCard, budgetCard === b.key && styles.budgetCardActive]}
+                                        onPress={() => setBudgetCard(b.key)}
+                                        activeOpacity={0.85}
+                                    >
+                                        <View style={styles.budgetCardLeft}>
+                                            <Text style={styles.budgetCardEmoji}>{b.emoji}</Text>
+                                            <View>
+                                                <Text style={[styles.budgetCardLabel, budgetCard === b.key && styles.budgetCardLabelActive]}>{b.label}</Text>
+                                                <Text style={styles.budgetCardDesc}>{b.desc}</Text>
+                                            </View>
+                                        </View>
+                                        <View>
+                                            <Text style={[styles.budgetCardAmount, budgetCard === b.key && { color: '#fdb19c' }]}>{b.sublabel}</Text>
+                                            {budgetCard === b.key && <View style={styles.budgetSelectedDot} />}
+                                        </View>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        )}
+
+                        {/* ── Step 4: Travelers ── */}
+                        {step === 4 && (
+                            <View style={{ width: '100%' }}>
+                                <Text style={styles.sectionLabel}>Travel type</Text>
+                                <View style={styles.travelerTypeRow}>
+                                    {TRAVELER_TYPES.map(t => (
+                                        <TouchableOpacity
+                                            key={t.key}
+                                            style={[styles.travelerTypeChip, travelerType === t.key && styles.travelerTypeChipActive]}
+                                            onPress={() => {
+                                                setTravelerType(t.key);
+                                                if (t.key === 'Solo') setPeopleIndex(0);
+                                                else if (t.key === 'Couple') setPeopleIndex(1);
+                                                else if (t.key === 'Friends') setPeopleIndex(3);
+                                                else if (t.key === 'Family') setPeopleIndex(3);
+                                            }}
+                                        >
+                                            <Text style={styles.travelerTypeEmoji}>{t.emoji}</Text>
+                                            <Text style={[styles.travelerTypeLabel, travelerType === t.key && styles.travelerTypeLabelActive]}>{t.label}</Text>
                                         </TouchableOpacity>
                                     ))}
                                 </View>
-                            )}
-                            {isSearchingLocation && geoSuggestions.length === 0 && (
-                                <View style={styles.autocompleteContainer}>
-                                    <ActivityIndicator size="small" color={Colors.primary} style={{ margin: Spacing.md }} />
+
+                                <Text style={[styles.sectionLabel, { marginTop: Spacing.xl }]}>Number of travelers</Text>
+                                <View style={styles.travelerStepperRow}>
+                                    <TouchableOpacity
+                                        style={styles.stepperBtn}
+                                        onPress={() => setPeopleIndex(i => Math.max(0, i - 1))}
+                                    >
+                                        <Text style={styles.stepperBtnText}>−</Text>
+                                    </TouchableOpacity>
+                                    <View style={styles.stepperCount}>
+                                        <Text style={styles.stepperCountNum}>{PEOPLE_OPTIONS[peopleIndex]}</Text>
+                                        <Text style={styles.stepperCountLabel}>person{PEOPLE_OPTIONS[peopleIndex] !== 1 ? 's' : ''}</Text>
+                                    </View>
+                                    <TouchableOpacity
+                                        style={styles.stepperBtn}
+                                        onPress={() => setPeopleIndex(i => Math.min(PEOPLE_OPTIONS.length - 1, i + 1))}
+                                    >
+                                        <Text style={styles.stepperBtnText}>+</Text>
+                                    </TouchableOpacity>
                                 </View>
-                            )}
-                        </View>
-                    )}
+                            </View>
+                        )}
+                    </Animated.ScrollView>
 
-                    {step === 1 && (
-                        <View style={{ width: '100%', alignItems: 'center' }}>
-                            <View style={[styles.destinationInput, { marginBottom: Spacing.lg, width: '100%' }]}>
-                                <CalendarIcon size={22} color={Colors.primary} />
-                                <Text style={styles.destinationTextInput}>
-                                    {!startDate ? 'Select Dates' : endDate ? `${startDate} to ${endDate}` : startDate}
-                                </Text>
-                            </View>
-                            
-                            <View style={{ width: '100%', borderRadius: 20, overflow: 'hidden', ...Shadows.md }}>
-                                <Calendar
-                                    markingType={'period'}
-                                    markedDates={getMarkedDates()}
-                                    onDayPress={handleDayPress}
-                                    theme={{
-                                        backgroundColor: Colors.surface,
-                                        calendarBackground: Colors.surface,
-                                        textSectionTitleColor: Colors.textSecondary,
-                                        selectedDayBackgroundColor: Colors.primary,
-                                        selectedDayTextColor: '#ffffff',
-                                        todayTextColor: Colors.primary,
-                                        dayTextColor: Colors.text,
-                                        textDisabledColor: Colors.textMuted,
-                                        arrowColor: Colors.primary,
-                                        monthTextColor: Colors.text,
-                                        textDayFontFamily: FontFamily.medium,
-                                        textMonthFontFamily: FontFamily.bold,
-                                        textDayHeaderFontFamily: FontFamily.semiBold,
-                                    }}
-                                />
-                            </View>
-                        </View>
-                    )}
-                    {step === 2 && (
-                        <ScrollWheel data={VIBES.map(v => v.key)} selectedIndex={vibeIndex} onSelect={setVibeIndex}
-                            renderLabel={(_, idx) => `${VIBES[idx].emoji}  ${VIBES[idx].key}`} />
-                    )}
-                    {step === 3 && (
-                        <View style={{ width: '100%', alignItems: 'center' }}>
-                            <View style={[styles.destinationInput, { marginBottom: Spacing['2xl'], width: '100%' }]}>
-                                <Wallet size={22} color={Colors.primary} />
-                                <Text style={styles.destinationTextInput}>
-                                    {getBudgetLabel(budgetVal)}
-                                </Text>
-                            </View>
-                            
-                            <Text style={styles.sliderLabel}>Slide to set your exact budget</Text>
-                            <Slider
-                                style={{width: '90%', height: 40}}
-                                minimumValue={5000}
-                                maximumValue={100000}
-                                step={1000}
-                                value={budgetVal}
-                                onValueChange={setBudgetVal}
-                                minimumTrackTintColor={Colors.primary}
-                                maximumTrackTintColor={Colors.borderLight}
-                                thumbTintColor={Colors.primary}
-                            />
-                            <View style={styles.sliderLabelsRow}>
-                                <Text style={styles.sliderBoundText}>₹5k</Text>
-                                <Text style={styles.sliderBoundText}>₹1L+</Text>
-                            </View>
-                        </View>
-                    )}
-                    {step === 4 && (
-                        <ScrollWheel data={PEOPLE_OPTIONS} selectedIndex={peopleIndex} onSelect={setPeopleIndex}
-                            renderLabel={(item) => `${item} ${item === 1 ? 'Person' : 'People'}`} />
-                    )}
-                </Animated.View>
-
-                {/* Bottom buttons */}
-                <View style={styles.bottomRow}>
-                    {step > 0 && (
-                        <TouchableOpacity style={styles.prevBtn} onPress={goBack} activeOpacity={0.8}>
-                            <ChevronLeft size={20} color={Colors.textSecondary} />
-                            <Text style={styles.prevBtnText}>Back</Text>
+                    {/* Bottom buttons */}
+                    <View style={styles.bottomRow}>
+                        {step > 0 && (
+                            <TouchableOpacity style={styles.prevBtn} onPress={goBack} activeOpacity={0.8}>
+                                <ChevronLeft size={20} color="rgba(255,239,236,0.8)" />
+                                <Text style={styles.prevBtnText}>Back</Text>
+                            </TouchableOpacity>
+                        )}
+                        <TouchableOpacity
+                            style={[
+                                styles.nextBtn,
+                                ((step === 0 && !destination.trim()) || (step === 1 && dateMode === 'calendar' && !startDate)) && styles.nextBtnDisabled
+                            ]}
+                            onPress={() => {
+                                if (step === STEP_COUNT - 1) {
+                                    handleGenerate(false);
+                                } else {
+                                    goNext();
+                                }
+                            }}
+                            disabled={(step === 0 && !destination.trim()) || (step === 1 && dateMode === 'calendar' && !startDate)}
+                            activeOpacity={0.8}
+                        >
+                            <Text style={styles.nextBtnText}>
+                                {step === STEP_COUNT - 1 ? 'Generate Itinerary ✨' : 'Continue'}
+                            </Text>
+                            {step < STEP_COUNT - 1 && <ChevronRight size={20} color="#a4351c" />}
                         </TouchableOpacity>
-                    )}
-                    <TouchableOpacity
-                        style={[
-                            styles.nextBtn, 
-                            (step === 0 && !destination.trim()) || (step === 1 && !startDate) ? styles.nextBtnDisabled : {}
-                        ]}
-                        onPress={goNext}
-                        disabled={(step === 0 && !destination.trim()) || (step === 1 && !startDate)}
-                        activeOpacity={0.8}
-                    >
-                        <Text style={styles.nextBtnText}>
-                            {step === STEP_COUNT - 1 ? 'Generate Itinerary' : 'Continue'}
-                        </Text>
-                        {step < STEP_COUNT - 1
-                            ? <ChevronRight size={20} color="#FFFFFF" />
-                            : <Sparkles size={18} color="#FFFFFF" />
-                        }
-                    </TouchableOpacity>
-                </View>
-            </SafeAreaView>
+                    </View>
+                </SafeAreaView>
+            </View>
+        );
+    }
+
+    if (mode === 'generating') {
+        const estNights = dateMode === 'flexible' || !startDate || !endDate ? flexDays : Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000);
+        return (
+            <View style={styles.wizardContainer}>
+                <LinearGradient
+                    colors={['#a4351c', '#fdb19c', '#ffc4b7']}
+                    start={{ x: 0, y: 1 }}
+                    end={{ x: 1, y: 0 }}
+                    style={StyleSheet.absoluteFill}
+                />
+                <View style={styles.grainOverlay} />
+                <SafeAreaView style={{ flex: 1 }}>
+                    <View style={styles.generatingContent}>
+                        <View style={styles.generatingTop}>
+                            <ActivityIndicator size="large" color="#ffefec" style={{ marginBottom: 24, transform: [{ scale: 1.5 }] }} />
+                            <Text style={[styles.generatingTitle, { color: '#ffefec' }]}>Crafting your journey...</Text>
+                            <Text style={[styles.generatingSubtitle, { color: 'rgba(255,239,236,0.8)' }]}>
+                                Building the perfect {estNights}-day itinerary for {destination || 'your destination'}.
+                            </Text>
+                        </View>
+                        
+                        <View style={styles.neonBarSection}>
+                            <View style={[styles.neonTrack, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                                <Animated.View style={[
+                                    styles.neonFill, 
+                                    { width: `${progress}%` as any, backgroundColor: '#ffefec', shadowColor: '#fff', shadowOpacity: 0.5, shadowRadius: 8 }
+                                ]} />
+                            </View>
+                            <Text style={{ fontFamily: FontFamily.semiBold, fontSize: 13, color: 'rgba(255,239,236,0.9)', textAlign: 'center', marginTop: 16 }}>
+                                {Math.round(progress)}% complete
+                            </Text>
+                        </View>
+                    </View>
+                </SafeAreaView>
+            </View>
         );
     }
 
     // ─────────────────────────────────────────────────────────
     // ── HOME view ──
     // ─────────────────────────────────────────────────────────
+    // Image height = 48% of screen height (leaves room for buttons on any device)
+    const imgHeight = height * 0.48;
+
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
-            <Animated.View style={[styles.content, { opacity: homeAnim }]}>
-                {/* Header */}
-                <View style={styles.header}>
-                    <Text style={styles.title}>Create Trip</Text>
-                    <Text style={styles.subtitle}>Plan your next adventure with AI or import from social</Text>
-                </View>
+        <View style={styles.container}>
+            {/* Lush Earthen Gradient */}
+            <LinearGradient
+                colors={['#a4351c', '#fdb19c', '#ffc4b7']}
+                start={{ x: 0, y: 1 }}
+                end={{ x: 1, y: 0 }}
+                style={StyleSheet.absoluteFill}
+            />
+            <View style={styles.grainOverlay} />
 
-                {/* Hero */}
-                <View style={styles.heroContainer}>
-                    <Image
-                        source={{ uri: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=100&w=1200&auto=format&fit=crop' }}
-                        style={styles.heroImage}
-                    />
-                    <View style={styles.heroOverlay} />
-                    <View style={styles.heroContent}>
-                        <Text style={styles.heroText}>Where will you go next?</Text>
+            <SafeAreaView style={styles.homeSafe} edges={['top', 'bottom']}>
+                <Animated.View style={[styles.homeContent, { opacity: homeAnim }]}>
+
+                    {/* Tilted image card — fixed pixel height so buttons never overlap */}
+                    <View style={[styles.imageCardWrapper, { height: imgHeight }]}>
+                        <Image
+                            source={{ uri: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=900&q=80&auto=format&fit=crop' }}
+                            style={styles.imageCard}
+                            resizeMode="cover"
+                        />
                     </View>
-                </View>
 
-                {/* Option Cards */}
-                <View style={styles.options}>
-                    {/* AI Generate */}
-                    <TouchableOpacity
-                        style={[styles.optionCard, styles.optionCardPrimary]}
-                        onPress={enterGenerateMode}
-                        activeOpacity={0.85}
-                    >
-                        <View style={styles.optionIconContainer}>
-                            <BlurView intensity={70} tint="light" style={[styles.optionIcon, styles.aiIcon]}>
-                                <Sparkles size={24} color={Colors.primary} />
-                            </BlurView>
-                        </View>
-                        <View style={styles.optionText}>
-                            <Text style={styles.optionTitle}>Where to?</Text>
-                            <Text style={styles.optionSubtitle}>
-                                Let AI plan the perfect itinerary based on your preferences
-                            </Text>
-                        </View>
-                        <View style={styles.optionArrow}>
-                            <ArrowRight size={20} color={Colors.primary} />
-                        </View>
-                    </TouchableOpacity>
+                    {/* CTA Buttons — always below the image, never overlapping */}
+                    <View style={styles.homeButtons}>
+                        <TouchableOpacity
+                            style={styles.homeBtnPrimary}
+                            onPress={enterGenerateMode}
+                            activeOpacity={0.85}
+                        >
+                            <Text style={styles.homeBtnPrimaryText}>Where to?</Text>
+                        </TouchableOpacity>
 
-                    {/* Import */}
-                    <TouchableOpacity
-                        style={styles.optionCard}
-                        onPress={() => router.push('/trip/import')}
-                        activeOpacity={0.85}
-                    >
-                        <View style={styles.optionIconContainer}>
-                            <BlurView intensity={70} tint="light" style={[styles.optionIcon, styles.importIcon]}>
-                                <Download size={24} color={Colors.primary} />
-                            </BlurView>
-                        </View>
-                        <View style={styles.optionText}>
-                            <Text style={styles.optionTitle}>Import Trips</Text>
-                            <Text style={styles.optionSubtitle}>
-                                Import itineraries from Instagram, YouTube, Reddit & more
-                            </Text>
-                        </View>
-                        <View style={styles.optionArrow}>
-                            <ArrowRight size={20} color={Colors.textMuted} />
-                        </View>
-                    </TouchableOpacity>
-                </View>
-            </Animated.View>
-        </SafeAreaView>
+                        <TouchableOpacity
+                            style={styles.homeBtnSecondary}
+                            onPress={() => router.push('/trip/import')}
+                            activeOpacity={0.85}
+                        >
+                            <Text style={styles.homeBtnSecondaryText}>Import Trip</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    <Text style={styles.homeFooter}>
+                        Explore curated itineraries from the world's leading travel journalists.
+                    </Text>
+                </Animated.View>
+            </SafeAreaView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     // ── Home ──
-    container: { flex: 1, backgroundColor: Colors.background },
+    container: { flex: 1 },
+    homeSafe: { flex: 1 },
+    // Column layout: image at top, then buttons, then footer — all in natural flow
+    homeContent: {
+        flex: 1,
+        paddingHorizontal: 28,
+        paddingTop: 16,
+        paddingBottom: 90,
+        alignItems: 'center',
+        justifyContent: 'space-between',  // evenly distributes space between 3 sections
+    },
+    grainOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        opacity: 0.08,
+        backgroundColor: 'transparent',
+    },
+    // Tilted image card — height set dynamically from useWindowDimensions
+    imageCardWrapper: {
+        width: '100%',
+        borderRadius: 24,
+        overflow: 'hidden',
+        transform: [{ rotate: '-2deg' }],
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 16 },
+        shadowOpacity: 0.4,
+        shadowRadius: 32,
+        elevation: 20,
+    },
+    imageCard: { width: '100%', height: '100%' },
+    // Buttons section
+    homeButtons: { width: '100%', gap: 14 },
+    homeBtnPrimary: {
+        width: '100%',
+        height: 60,
+        backgroundColor: '#0c0f10',
+        borderRadius: 9999,
+        alignItems: 'center', justifyContent: 'center',
+        shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3, shadowRadius: 8, elevation: 6,
+    },
+    homeBtnPrimaryText: {
+        fontFamily: FontFamily.bold, fontSize: 18, color: '#ffffff',
+    },
+    homeBtnSecondary: {
+        width: '100%',
+        height: 60,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        borderRadius: 9999, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)',
+        alignItems: 'center', justifyContent: 'center',
+    },
+    homeBtnSecondaryText: {
+        fontFamily: FontFamily.bold, fontSize: 18, color: '#ffffff',
+    },
+    homeFooter: {
+        fontFamily: FontFamily.medium, fontSize: 13,
+        color: 'rgba(255,239,236,0.7)',
+        textAlign: 'center', maxWidth: 280,
+    },
     content: { flex: 1, paddingHorizontal: Spacing.lg },
     header: { marginTop: Spacing.md, marginBottom: Spacing.lg },
     title: { fontFamily: FontFamily.bold, fontSize: FontSize['3xl'], color: Colors.text },
     subtitle: { fontFamily: FontFamily.regular, fontSize: FontSize.base, color: Colors.textSecondary, marginTop: 4 },
-    heroContainer: { height: 200, borderRadius: BorderRadius.xxl, overflow: 'hidden', marginBottom: Spacing.lg, ...Shadows.md },
-    heroImage: { width: '100%', height: '100%', resizeMode: 'cover' },
-    heroOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.35)' },
-    heroContent: { ...StyleSheet.absoluteFillObject, justifyContent: 'flex-end', padding: Spacing.lg },
-    heroText: { fontFamily: FontFamily.bold, fontSize: FontSize['2xl'], color: '#FFFFFF' },
-    options: { gap: Spacing.md },
-    optionCard: {
-        flexDirection: 'row', alignItems: 'center',
-        backgroundColor: Colors.surface, borderRadius: BorderRadius.xl,
-        padding: Spacing.lg, ...Shadows.md,
-    },
-    optionCardPrimary: {
-        borderWidth: 1.5, borderColor: Colors.primary + '30',
-    },
-    optionIconContainer: { marginRight: Spacing.md, borderRadius: BorderRadius.lg, overflow: 'hidden' },
-    optionIcon: { width: 52, height: 52, justifyContent: 'center', alignItems: 'center' },
-    aiIcon: { backgroundColor: 'rgba(39,169,130,0.15)' },
-    importIcon: { backgroundColor: 'rgba(32,133,109,0.1)' },
-    optionText: { flex: 1 },
-    optionTitle: { fontFamily: FontFamily.semiBold, fontSize: FontSize.lg, color: Colors.text },
-    optionSubtitle: { fontFamily: FontFamily.regular, fontSize: FontSize.sm, color: Colors.textSecondary, marginTop: 2, lineHeight: 18 },
-    optionArrow: { marginLeft: Spacing.sm },
 
     // ── Wizard ──
-    wizardContainer: { flex: 1, backgroundColor: Colors.background },
+    wizardContainer: { flex: 1 },
     wizardHeader: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm, paddingBottom: Spacing.xs,
     },
-    backButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'flex-start' },
-    stepIndicator: { fontFamily: FontFamily.semiBold, fontSize: FontSize.sm, color: Colors.textMuted },
+    backButton: {
+        width: 40, height: 40, justifyContent: 'center', alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.25)', borderRadius: 20,
+    },
+    stepIndicator: { fontFamily: FontFamily.semiBold, fontSize: FontSize.sm, color: 'rgba(255,239,236,0.8)' },
     progressContainer: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.md },
-    progressBg: { height: 4, backgroundColor: Colors.borderLight, borderRadius: 2, overflow: 'hidden' },
-    progressFill: { height: '100%', backgroundColor: Colors.primary, borderRadius: 2 },
+    progressBg: { height: 4, backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 2, overflow: 'hidden' },
+    progressFill: { height: '100%', backgroundColor: '#0c0f10', borderRadius: 2 },
     stepContent: {
-        flex: 1, paddingHorizontal: Spacing.lg,
-        justifyContent: 'center', alignItems: 'center',
+        paddingHorizontal: Spacing.lg,
+        paddingBottom: 32,
+        alignItems: 'center',
     },
     stepTitle: {
-        fontFamily: FontFamily.bold, fontSize: 32, color: Colors.text,
+        fontFamily: FontFamily.bold, fontSize: 32, color: '#ffefec',
         textAlign: 'center', marginBottom: 8, letterSpacing: -0.5,
     },
     stepSubtitle: {
-        fontFamily: FontFamily.regular, fontSize: FontSize.base, color: Colors.textSecondary,
+        fontFamily: FontFamily.regular, fontSize: FontSize.base, color: 'rgba(255,239,236,0.75)',
         textAlign: 'center', marginBottom: Spacing['2xl'],
     },
 
@@ -802,22 +1032,21 @@ const styles = StyleSheet.create({
     destinationContainer: { width: '100%', paddingHorizontal: Spacing.md, zIndex: 10 },
     destinationInput: {
         flexDirection: 'row', alignItems: 'center', gap: 16,
-        backgroundColor: Colors.surface, borderRadius: BorderRadius.xxl,
+        backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: BorderRadius.xxl,
         height: 64, paddingHorizontal: Spacing.xl,
-        borderWidth: 1, borderColor: Colors.borderLight, ...Shadows.md, shadowOpacity: 0.08,
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
     },
     destinationTextInput: {
-        flex: 1, fontFamily: FontFamily.semiBold, fontSize: FontSize.xl, color: Colors.text, height: '100%',
+        flex: 1, fontFamily: FontFamily.semiBold, fontSize: FontSize.xl,
+        color: '#ffefec', height: '100%',
     },
     autocompleteContainer: {
         marginTop: 8, backgroundColor: 'rgba(255,255,255,0.95)',
-        borderRadius: BorderRadius.xl, padding: Spacing.sm,
-        borderWidth: 1, borderColor: Colors.borderLight, ...Shadows.lg, shadowOpacity: 0.1,
+        borderRadius: BorderRadius.xl, padding: Spacing.sm, ...Shadows.lg, shadowOpacity: 0.1,
     },
     suggestionItem: {
         flexDirection: 'row', alignItems: 'center', gap: 12,
         paddingVertical: 12, paddingHorizontal: Spacing.sm,
-        borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: Colors.borderLight,
     },
     suggestionText: { fontFamily: FontFamily.medium, fontSize: FontSize.base, color: Colors.text, flex: 1 },
 
@@ -826,7 +1055,6 @@ const styles = StyleSheet.create({
     wheelHighlight: {
         position: 'absolute', top: ITEM_HEIGHT * 2, left: Spacing.lg, right: Spacing.lg,
         height: ITEM_HEIGHT, borderRadius: 16, backgroundColor: Colors.primaryContainer,
-        borderWidth: 1.5, borderColor: Colors.primary + '40',
     },
     wheelItem: { justifyContent: 'center', alignItems: 'center' },
     wheelItemText: { fontFamily: FontFamily.semiBold, fontSize: FontSize.xl, color: Colors.text, textAlign: 'center' },
@@ -842,15 +1070,18 @@ const styles = StyleSheet.create({
     prevBtn: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4,
         paddingHorizontal: 20, height: 56, borderRadius: 28,
-        backgroundColor: Colors.surface, ...Shadows.sm,
+        backgroundColor: 'rgba(0,0,0,0.25)',
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)',
     },
-    prevBtnText: { fontFamily: FontFamily.semiBold, fontSize: FontSize.base, color: Colors.textSecondary },
+    prevBtnText: { fontFamily: FontFamily.semiBold, fontSize: FontSize.base, color: 'rgba(255,239,236,0.85)' },
     nextBtn: {
         flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        gap: 8, height: 56, borderRadius: 28, backgroundColor: Colors.primary, ...Shadows.md,
+        gap: 8, height: 56, borderRadius: 28, backgroundColor: '#0c0f10',
+        shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3, shadowRadius: 8, elevation: 6,
     },
-    nextBtnDisabled: { opacity: 0.4 },
-    nextBtnText: { fontFamily: FontFamily.bold, fontSize: FontSize.lg, color: '#FFFFFF' },
+    nextBtnDisabled: { opacity: 0.35 },
+    nextBtnText: { fontFamily: FontFamily.bold, fontSize: FontSize.lg, color: '#ffffff' },
 
     // Generating
     generatingContainer: { flex: 1, backgroundColor: Colors.background },
@@ -859,7 +1090,123 @@ const styles = StyleSheet.create({
     generatingTitle: { fontFamily: FontFamily.bold, fontSize: FontSize['2xl'], color: Colors.text, marginTop: Spacing.lg, textAlign: 'center' },
     generatingSubtitle: { fontFamily: FontFamily.regular, fontSize: FontSize.base, color: Colors.textSecondary, marginTop: Spacing.sm, textAlign: 'center' },
     neonBarSection: { width: '100%', paddingHorizontal: Spacing.md },
-    neonTrack: { width: '100%', height: 4, backgroundColor: 'rgba(32,133,109,0.2)', borderRadius: 999, overflow: 'visible', position: 'relative' },
+    neonTrack: { width: '100%', height: 4, backgroundColor: 'rgba(92, 91, 91, 0.2)', borderRadius: 999, overflow: 'visible', position: 'relative' },
     neonFill: { height: '100%', borderRadius: 999, backgroundColor: Colors.primary, shadowColor: Colors.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 10, elevation: 6 },
     neonDot: { position: 'absolute', top: -5, width: 14, height: 14, borderRadius: 7, backgroundColor: Colors.primaryLight, shadowColor: Colors.primaryDark, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 12, elevation: 8 },
+
+    // ── Stitch: Date Step ──
+    dateToggleRow: {
+        flexDirection: 'row', gap: 10, marginBottom: Spacing.lg,
+    },
+    dateToggleBtn: {
+        flexDirection: 'row', alignItems: 'center', gap: 6,
+        paddingHorizontal: 18, paddingVertical: 10, borderRadius: 30,
+        backgroundColor: Colors.surface, ...Shadows.sm,
+    },
+    dateToggleBtnActive: { backgroundColor: Colors.primary },
+    dateToggleText: { fontFamily: FontFamily.semiBold, fontSize: FontSize.sm, color: Colors.textSecondary },
+    dateToggleTextActive: { color: '#fff' },
+    dateSummaryRow: {
+        flexDirection: 'row', gap: 10, marginBottom: Spacing.md,
+    },
+    dateSummaryChip: {
+        flex: 1, backgroundColor: Colors.surface, borderRadius: 14,
+        paddingVertical: 10, paddingHorizontal: 14, alignItems: 'center', ...Shadows.sm,
+    },
+    dateSummaryLabel: {
+        fontFamily: FontFamily.bold, fontSize: 9, color: Colors.textMuted,
+        letterSpacing: 1, textTransform: 'uppercase', marginBottom: 2,
+    },
+    dateSummaryValue: {
+        fontFamily: FontFamily.semiBold, fontSize: FontSize.sm, color: Colors.text,
+    },
+
+    // ── Stitch: Flexible Duration ──
+    sectionLabel: {
+        fontFamily: FontFamily.bold, fontSize: FontSize.sm, color: Colors.textMuted,
+        textTransform: 'uppercase', letterSpacing: 1, marginBottom: Spacing.sm,
+    },
+    flexDurationGrid: {
+        flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: Spacing.lg,
+    },
+    flexDurationChip: {
+        paddingHorizontal: 24, paddingVertical: 14, borderRadius: 50,
+        backgroundColor: Colors.surface, ...Shadows.sm,
+    },
+    flexDurationChipActive: { backgroundColor: Colors.primary },
+    flexDurationText: { fontFamily: FontFamily.semiBold, fontSize: FontSize.base, color: Colors.textSecondary },
+    flexDurationTextActive: { color: '#fff' },
+    flexDurationPreview: {
+        backgroundColor: Colors.primaryContainer + '40', borderRadius: 16,
+        paddingVertical: 14, paddingHorizontal: 20, alignItems: 'center',
+    },
+    flexDurationPreviewText: {
+        fontFamily: FontFamily.semiBold, fontSize: FontSize.base, color: Colors.primary,
+    },
+
+    // ── Stitch: Vibe Grid ──
+    vibeGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 12,
+        width: '100%',
+        justifyContent: 'space-between',
+    },
+    vibeCard: {
+        flexBasis: '47%', flexGrow: 0, height: 100,
+        backgroundColor: 'rgba(0,0,0,0.25)',
+        borderRadius: 20, alignItems: 'center', justifyContent: 'center', gap: 6,
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
+    },
+    vibeCardActive: { backgroundColor: '#0c0f10', borderColor: '#0c0f10' },
+    vibeEmoji: { fontSize: 32 },
+    vibeLabel: { fontFamily: FontFamily.semiBold, fontSize: FontSize.base, color: 'rgba(255,239,236,0.85)' },
+    vibeLabelActive: { color: '#ffffff' },
+
+    // Budget Cards
+    budgetCardList: { width: '100%', gap: 14 },
+    budgetCard: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        backgroundColor: 'rgba(0,0,0,0.25)', borderRadius: 20, padding: Spacing.lg,
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
+    },
+    budgetCardActive: {
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        borderWidth: 2, borderColor: '#fdb19c',
+    },
+    budgetCardLeft: { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 },
+    budgetCardEmoji: { fontSize: 30 },
+    budgetCardLabel: { fontFamily: FontFamily.bold, fontSize: FontSize.lg, color: '#ffefec' },
+    budgetCardLabelActive: { color: '#fdb19c' },
+    budgetCardDesc: { fontFamily: FontFamily.regular, fontSize: FontSize.xs, color: 'rgba(255,239,236,0.55)', marginTop: 2 },
+    budgetCardAmount: { fontFamily: FontFamily.bold, fontSize: FontSize.base, color: 'rgba(255,239,236,0.7)', textAlign: 'right' },
+    budgetSelectedDot: {
+        width: 10, height: 10, borderRadius: 5, backgroundColor: '#fdb19c',
+        marginTop: 6, alignSelf: 'flex-end',
+    },
+
+    // Traveler Step
+    travelerTypeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: Spacing.sm },
+    travelerTypeChip: {
+        flex: 1, minWidth: '40%', flexDirection: 'row', alignItems: 'center', gap: 10,
+        backgroundColor: 'rgba(0,0,0,0.25)', borderRadius: 16, padding: 16,
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
+    },
+    travelerTypeChipActive: { backgroundColor: '#0c0f10', borderColor: '#0c0f10' },
+    travelerTypeEmoji: { fontSize: 22 },
+    travelerTypeLabel: { fontFamily: FontFamily.semiBold, fontSize: FontSize.base, color: 'rgba(255,239,236,0.85)' },
+    travelerTypeLabelActive: { color: '#ffffff' },
+    travelerStepperRow: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+        gap: 32, marginTop: Spacing.sm,
+    },
+    stepperBtn: {
+        width: 56, height: 56, borderRadius: 28,
+        backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center',
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)',
+    },
+    stepperBtnText: { fontFamily: FontFamily.bold, fontSize: 28, color: '#ffefec', lineHeight: 32 },
+    stepperCount: { alignItems: 'center' },
+    stepperCountNum: { fontFamily: FontFamily.bold, fontSize: 52, color: '#ffefec', lineHeight: 56 },
+    stepperCountLabel: { fontFamily: FontFamily.medium, fontSize: FontSize.sm, color: 'rgba(255,239,236,0.7)' },
 });

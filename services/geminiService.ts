@@ -18,7 +18,7 @@ import { getCachedItinerary, setCachedItinerary } from './itineraryCache';
 import { logGeneration } from './sessionLog';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-const GEMINI_MODEL = 'gemini-1.5-flash';
+const GEMINI_MODEL = 'gemini-2.0-flash';
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 const API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY ?? '';
 
@@ -80,10 +80,23 @@ function sleep(ms: number): Promise<void> {
  *   1. systemPrompt — persona + rules + output format (static per session)
  *   2. userMessage  — the specific trip request (changes per generate call)
  */
+// ── Interest → Category Mapping (Plan.txt: candidate retrieval heuristics) ────
+const INTEREST_FOCUS: Record<string, string> = {
+    Chill:     'Prioritize spas, parks, scenic cafes, and peaceful waterfront walks.',
+    Party:     'Prioritize rooftop bars, nightclubs, live music venues, and street festivals.',
+    Culture:   'Prioritize museums, heritage sites, temples/churches, and art galleries.',
+    Adventure: 'Prioritize trekking, water sports, zip-lining, and outdoor excursions.',
+    Foodie:    'Prioritize street food markets, Michelin-rated restaurants, cooking classes, and food tours.',
+    Romantic:  'Prioritize sunset viewpoints, candlelit restaurants, scenic boat rides, and boutique hotels.',
+    Solo:      'Prioritize co-working cafes, hostel social events, walking tours, and self-guided trails.',
+    Family:    'Prioritize kid-friendly attractions, amusement parks, zoos, and early-closing restaurants.',
+};
+
 function buildSystemPrompt(preferences: ItineraryPreferences): string {
     const { budget, travelStyle, interests, groupSize } = preferences;
+    const interestFocus = (interests || []).map(i => INTEREST_FOCUS[i] || '').filter(Boolean).join(' ');
 
-    return `You are Curatr, an expert AI travel planner with deep knowledge of global destinations, local culture, cuisine, and hidden gems.
+    return `You are Curatr, an expert AI travel planner. You produce structured, realistic daily itineraries.
 
 USER PROFILE:
 - Travel Style: ${travelStyle}
@@ -91,25 +104,44 @@ USER PROFILE:
 - Interests: ${(interests || []).join(', ')}
 - Group Size: ${groupSize ?? 1} ${(groupSize ?? 1) === 1 ? 'person' : 'people'}
 
-YOUR RULES:
-1. Create realistic daily schedules from 8:00 AM to 10:00 PM
-2. Include exact times for every activity
-3. Allow adequate travel time between locations (never back-to-back without transport)
-4. Provide all cost estimates in Indian Rupees (₹)
-5. Consider local customs, peak visiting hours, and seasonal factors
-6. Include insider tips that most tourists miss
-7. Suggest specific named restaurants, not generic "local restaurant"
-8. Balance activities — never more than 4 major sights per day
-9. Account for jet lag on Day 1 (lighter schedule)
-10. Match the vibe strictly: ${travelStyle} travellers do not want activities that clash with their style
+INTEREST FOCUS RULES (apply strictly):
+${interestFocus || 'Balance sightseeing, food, and culture.'}
+
+DAY LAYOUT TEMPLATE (follow this structure every day):
+Every day MUST have exactly 3-4 activities spread across:
+  MORNING (8:00 AM – 12:00 PM): 1-2 activities — sightseeing, walking, cultural exploration
+  AFTERNOON (12:00 PM – 6:00 PM): 1-2 activities — lunch + 1 major attraction or experience  
+  EVENING (6:00 PM – 10:00 PM): 1 activity — dinner or nightlife appropriate to travel style
+
+SCHEDULING RULES (from itinerary generation best practices):
+1. Allow 30–45 minutes travel time between locations — never schedule adjacent activities < 30 min apart
+2. Day 1 must have a lighter schedule — max 3 activities to account for arrival fatigue
+3. Each activity MUST have a specific named location (not "local restaurant" — use actual place names)
+4. No more than 2 activities from the same category in one day (diversity rule)
+5. Restaurants must be specific named places matching the budget tier
+6. All cost estimates in Indian Rupees (₹)
+7. Match ALL activities strictly to the ${travelStyle} travel style — reject any activity that conflicts
+8. Account for opening hours — museums close Mondays, nightlife starts after 9 PM
+
+DAY SCORING PRIORITIES:
+1. Minimize travel time between consecutive activities (geographic clustering)
+2. Maximize relevance to user interests
+3. Ensure budget alignment — ${budget} travelers should not see luxury options
+4. Maintain variety — no two consecutive days with identical activity types
+
+CONSISTENCY CHECKS (apply before outputting):
+- Times must be in strict chronological order within each day
+- No time overlap between activities (current end time < next start time)
+- Last activity of each day must end by 10:30 PM
+- Verify budget breakdown sums to stated total
 
 OUTPUT FORMAT:
-Return ONLY valid JSON — no markdown, no code fences, no explanation. Use this exact schema:
+Return ONLY valid JSON — no markdown, no code fences, no explanation.
 
 {
   "destination": string,
   "duration": number,
-  "overview": "2-3 sentence overview personalised to the user profile",
+  "overview": "2-3 sentence overview personalised to user profile",
   "bestTimeToVisit": string,
   "days": [
     {
@@ -118,13 +150,17 @@ Return ONLY valid JSON — no markdown, no code fences, no explanation. Use this
       "activities": [
         {
           "time": "9:00 AM",
-          "title": "Specific activity name",
-          "description": "Rich 2-sentence description",
+          "title": "Specific named activity",
+          "description": "Rich 2-sentence description with specific details",
           "duration": "X hours",
           "estimatedCost": "₹XXX",
-          "location": "Specific named location",
+          "location": {
+            "name": "Specific named location",
+            "latitude": 35.6586,
+            "longitude": 139.7454
+          },
           "category": "Sightseeing | Food | Adventure | Culture | Shopping | Relaxation | Nightlife",
-          "tips": ["Actionable tip 1", "Tip 2"]
+          "tips": ["Actionable insider tip", "Second tip"]
         }
       ],
       "totalCost": "₹X,XXX",
@@ -139,13 +175,13 @@ Return ONLY valid JSON — no markdown, no code fences, no explanation. Use this
     "miscellaneous": "₹X,XXX",
     "total": "₹XX,XXX"
   },
-  "tips": ["General tip 1", "Local etiquette tip", "Safety tip"],
+  "tips": ["General tip", "Local etiquette", "Safety tip"],
   "packingList": ["Item 1", "Item 2"],
   "localInfo": {
-    "currency": "Currency name",
-    "language": "Primary language",
+    "currency": string,
+    "language": string,
     "emergencyNumbers": ["Police: XXX", "Ambulance: XXX"],
-    "transportation": ["Local transport tip 1", "Tip 2"]
+    "transportation": ["Tip 1", "Tip 2"]
   }
 }
 
@@ -224,6 +260,61 @@ function extractJSON(raw: string): string {
     return cleaned;
 }
 
+// ── Itinerary Validator (Plan.txt: consistency checks) ──────────────────────
+/**
+ * Validates parsed itinerary for:
+ *  - Chronological time ordering within each day
+ *  - Reasonable activity counts (3–6 per day)
+ *  - Category diversity (no more than 2 of same category/day)
+ * Logs warnings but does NOT throw — bad data is better than no data.
+ */
+function validateItinerary(itinerary: Itinerary): void {
+    const parseTime = (t: string): number => {
+        if (!t) return 0;
+        const m = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+        if (!m) return 0;
+        let h = parseInt(m[1]);
+        const min = parseInt(m[2]);
+        const ampm = m[3].toUpperCase();
+        if (ampm === 'PM' && h !== 12) h += 12;
+        if (ampm === 'AM' && h === 12) h = 0;
+        return h * 60 + min;
+    };
+
+    (itinerary.days || []).forEach((day: any, di: number) => {
+        const acts = day.activities || [];
+
+        // Check count
+        if (acts.length < 2) {
+            console.warn(`[Validator] Day ${di + 1} has only ${acts.length} activities.`);
+        }
+        if (acts.length > 6) {
+            console.warn(`[Validator] Day ${di + 1} has ${acts.length} activities — may be overcrowded.`);
+        }
+
+        // Check time ordering
+        let prevTime = 0;
+        acts.forEach((act: any, ai: number) => {
+            const t = parseTime(act.time);
+            if (t > 0 && t < prevTime) {
+                console.warn(`[Validator] Day ${di + 1}, Activity ${ai + 1} "${act.title}" time ${act.time} is before previous activity.`);
+            }
+            if (t > 0) prevTime = t;
+        });
+
+        // Check category diversity
+        const categoryCounts: Record<string, number> = {};
+        acts.forEach((act: any) => {
+            if (act.category) {
+                categoryCounts[act.category] = (categoryCounts[act.category] || 0) + 1;
+                if (categoryCounts[act.category] > 2) {
+                    console.warn(`[Validator] Day ${di + 1}: category "${act.category}" appears ${categoryCounts[act.category]} times.`);
+                }
+            }
+        });
+    });
+}
+
 // ── Response Parser ────────────────────────────────────────────────────────────
 function parseItineraryResponse(raw: string, preferences: ItineraryPreferences): Itinerary {
     const cleaned = extractJSON(raw);
@@ -257,7 +348,7 @@ function parseItineraryResponse(raw: string, preferences: ItineraryPreferences):
         notes: day.notes,
     }));
 
-    return {
+    const result: Itinerary = {
         id: `gemini_${Date.now()}`,
         userId: 'gemini_generated',
         destination: data.destination,
@@ -274,6 +365,11 @@ function parseItineraryResponse(raw: string, preferences: ItineraryPreferences):
         moodTags: preferences.interests,
         createdAt: new Date().toISOString(),
     } as Itinerary;
+
+    // Plan.txt: Run consistency checks (non-blocking warnings)
+    validateItinerary(result);
+
+    return result;
 }
 
 // ── Streaming Handler ──────────────────────────────────────────────────────────

@@ -1,11 +1,11 @@
-// Design System Typography — Curatr Design Guide
-// Using Inter font family
+// Using Plus Jakarta Sans font family
 
 export const FontFamily = {
-    regular: 'Inter_400Regular',
-    medium: 'Inter_500Medium',
-    semiBold: 'Inter_600SemiBold',
-    bold: 'Inter_700Bold',
+    regular: 'PlusJakartaSans_400Regular',
+    medium: 'PlusJakartaSans_500Medium',
+    semiBold: 'PlusJakartaSans_600SemiBold',
+    bold: 'PlusJakartaSans_700Bold',
+    extraBold: 'PlusJakartaSans_800ExtraBold',
 } as const;
 
 export const FontSize = {

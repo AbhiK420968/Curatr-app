@@ -1,0 +1,183 @@
+1) System components (conceptual architecture)
+A typical itinerary platform has these layers:
+
+Client (Web/iOS/Android)
+Renders chat, itinerary timeline, and the map. Maintains a local view-model of the trip so edits feel instant.
+
+API / Application backend
+Handles authentication, trip CRUD (create/read/update/delete), ideas lists, collaboration (if any), and orchestration of itinerary generation.
+
+Itinerary generation service
+A service that turns trip constraints + preferences into a structured plan (days, time blocks, places).
+
+Place data layer
+Provides normalized “place entities” (name, category, geo, hours, photos, etc.) and search/ranking.
+
+Data store(s)
+Persist trips, itinerary items, and user preferences. Often separate stores exist for operational data vs analytics.
+
+Caching layer(s)
+Reduce latency for frequently accessed trips/place lookups and improve map performance.
+
+2) Data model: how itineraries are represented (high level)
+Most systems store an itinerary as structured objects, not just text. Common primitives:
+
+A) Trip (top-level)
+/ access control list
+, (or )
+(could be one or many)
+(budget band, pace, interests, mobility constraints, etc.)
+, , version metadata
+B) Itinerary day
+, ,
+(optional)
+C) Itinerary item (the core unit)
+,
+(activity / restaurant / hotel / transit / free_time)
+, (or flexible window)
+(optional; links to canonical place entity)
+,
+(e.g., nightlife, outdoors, culture)
+metadata (user-added vs AI-generated vs imported)
+/ (optional internal field)
+(position within the day)
+D) Place entity (canonical reference)
+Instead of copying all details into the itinerary item, systems typically store:
+
+(stable identifier)
+, ,
+, , , (if available)
+(pointers/URLs, not the images themselves)
+This avoids duplication and allows updates if place details change.
+
+3) Inputs to generation (what the “planner” consumes)
+A) Hard constraints (must satisfy)
+Trip dates/duration
+Destination(s)
+Traveler count (sometimes affects pacing and restaurant choices)
+Budget band (e.g., budget/mid-range/luxury)
+Mobility constraints (if provided)
+Any “must do / must avoid” items
+B) Soft preferences (optimize for)
+Interests (foodie, nightlife, nature, museums, shopping, etc.)
+Pace (relaxed vs packed)
+Day structure (early starts vs late nights)
+Cuisine preferences / dietary constraints
+Style preferences (local, trendy, quiet, family-friendly)
+C) Contextual signals (optional)
+Seasonality and typical weather patterns (high level)
+Day-of-week effects (some venues are better on weekends)
+Neighborhood popularity and travel friction (distance/time)
+4) Generation logic (technical heuristics, non-proprietary)
+Most itinerary generators combine constraint satisfaction + ranking + layout.
+
+Step 1: Candidate retrieval
+For each day (or for the trip), the system retrieves candidates:
+
+Activities/attractions matching interests
+Restaurants matching budget/cuisine/location
+Nightlife candidates if requested
+This can be done via:
+
+Keyword/category search
+Geo-radius search
+“Similar to” retrieval (embeddings) to match vibe/style
+Step 2: Scoring & ranking
+Each candidate gets a score from weighted factors such as:
+
+Relevance to your interests (semantic match)
+Distance / travel time from the day’s “center of gravity”
+Opening hours fit for the intended time block
+Budget fit
+Diversity (avoid repeating identical experiences)
+Popularity / quality signals (ratings, review volume—when available)
+Novelty vs familiarity (some systems balance “iconic” and “hidden gem”)
+Step 3: Day layout (scheduling)
+The generator assigns top candidates into time blocks:
+
+Morning / afternoon / evening templates
+Optional fixed anchors (e.g., a show time, reservation time)
+Recovery logic (late night → later start next day)
+Maximum walking/commute thresholds (to avoid overstuffing)
+This is often implemented as:
+
+Greedy scheduling with backtracking (simple, fast)
+Or an optimization problem (more complex) to minimize travel time while maximizing scores
+Step 4: Consistency checks
+Before finalizing, systems typically run validators:
+
+No impossible hours overlap
+No closed-day placement (if hours known)
+Avoid unrealistic transit (e.g., too many far-apart items)
+Ensure meal coverage if the template expects it
+Step 5: Output formatting
+The structured itinerary is then rendered into:
+
+Timeline items in the UI
+Map pins
+Chat explanation text (“why this fits you”)
+5) How “edits” work (regeneration vs patching)
+When you change one thing (swap a restaurant, add an activity), good systems avoid regenerating the entire trip. Common approaches:
+
+Local patch: insert/replace one item and reflow only that day
+Partial regen: regenerate one day or a segment (e.g., evenings only)
+Full regen: only when you change major constraints (dates, destination set, pace)
+This reduces churn and preserves your manual edits.
+
+6) Storage: persistence, versions, and safety
+A) Persistence model
+Trips and itinerary items are stored server-side under your account.
+The client keeps a local copy for responsiveness, then syncs changes.
+B) Versioning (to prevent overwrites)
+Common patterns:
+
++ optimistic concurrency (reject conflicting edits)
+Revision numbers (v1, v2, v3…)
+Event sourcing (store “add item”, “remove item” events) in advanced systems
+C) Auditability (non-sensitive concept)
+Some platforms keep:
+
+Who changed what and when
+Whether an item was AI-generated or user-added
+7) Caching: what’s cached and why (general)
+Caching is about speed and rate-limit protection, not “hiding” data.
+
+A) Client-side caching (device/browser)
+Typically cached:
+
+Recently opened trips (serialized itinerary objects)
+Place cards/details you viewed
+Map tiles (handled by the map SDK)
+Search results for quick back/forward navigation
+Common mechanisms:
+
+In-memory cache for the current session
+Local storage / indexed DB / on-device database (platform dependent)
+B) Server-side caching
+Typically cached:
+
+Place lookup results (since they’re frequently requested)
+Search query results (short TTL)
+Render-ready itinerary summaries (if expensive to compute)
+Common patterns:
+
+TTL-based caches (minutes to hours) for volatile data
+Cache invalidation on updates (when you edit a trip, cached trip payload is invalidated)
+C) What usually is not cached long-term
+Sensitive user data in shared caches without strong isolation
+Auth tokens in places accessible to other users/processes
+(Exact TTLs, cache keys, and infrastructure are intentionally not disclosed.)
+
+8) Reliability: how systems handle “stale” place info
+Place data can change (hours, closures). Non-sensitive best practices:
+
+Periodically refresh place metadata
+Prefer sources with update signals
+Fall back gracefully if hours are unknown
+Show “verify hours” messaging when confidence is low
+9) Privacy & security (high-level)
+Without getting into internals:
+
+Access control ensures only you (and explicitly shared collaborators) can read/write your trip.
+Data in transit is typically encrypted (HTTPS).
+Sensitive operational details (keys, internal endpoints, vendor contracts) are not exposed to the client.

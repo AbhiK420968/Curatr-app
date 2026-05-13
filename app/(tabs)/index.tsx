@@ -1,556 +1,354 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-    View,
-    Text,
-    TouchableOpacity,
-    StyleSheet,
-    ScrollView,
-    Image,
-    useWindowDimensions,
-    TextInput
+    View, Text, TouchableOpacity, StyleSheet, Image,
+    FlatList, RefreshControl, Alert, ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
 import { Colors, FontFamily, FontSize, Spacing, BorderRadius, Shadows } from '@/constants';
-import { Menu, Search, Bell, Star, MapPin, ArrowUpRight } from 'lucide-react-native';
-import { BlurView } from 'expo-blur';
+import { MapPin, Plus, Clock, Trash2, Receipt, Sparkles, Globe, Calendar, Map } from 'lucide-react-native';
+import { tripService } from '@/services/tripService';
+import { useItineraryContext } from '@/contexts/itinerary-context';
+import type { Itinerary } from '@/types';
 
-// ─── Data (mirrored from e:/Curatr/src/app/data/destinations.ts) ──────────────
-interface Destination {
-    id: string;
-    name: string;
-    country: string;
-    continent: string;
-    rating: number;
-    price: number;
-    image: string;
-    description: string;
-}
+type TripTab = 'upcoming' | 'past';
 
-const DESTINATIONS: Destination[] = [
-    {
-        id: 'florence',
-        name: 'Florence',
-        country: 'Italia',
-        continent: 'Europe',
-        rating: 5.0,
-        price: 799,
-        image: 'https://images.unsplash.com/photo-1681844931449-e0992a27d157?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
-        description: 'Experience the Renaissance capital of Italy.',
-    },
-    {
-        id: 'amalfi',
-        name: 'Amalfi Coast',
-        country: 'Italia',
-        continent: 'Europe',
-        rating: 5.0,
-        price: 899,
-        image: 'https://images.unsplash.com/photo-1583844056361-4418a8f2a985?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
-        description: 'Breathtaking coastal beauty of southern Italy.',
-    },
-    {
-        id: 'lake-como',
-        name: 'Lake Como',
-        country: 'Italia',
-        continent: 'Europe',
-        rating: 4.8,
-        price: 899,
-        image: 'https://images.unsplash.com/photo-1653917190674-ef84725ab2ff?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
-        description: 'A stunning glacial lake surrounded by dramatic mountains.',
-    },
-    {
-        id: 'positano',
-        name: 'Positano',
-        country: 'Italia',
-        continent: 'Europe',
-        rating: 4.9,
-        price: 950,
-        image: 'https://images.unsplash.com/photo-1561956021-947f09ae0101?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
-        description: 'A jewel of the Amalfi Coast.',
-    },
-    {
-        id: 'kyoto',
-        name: 'Kyoto',
-        country: 'Japan',
-        continent: 'Asia',
-        rating: 4.9,
-        price: 1099,
-        image: 'https://images.unsplash.com/photo-1655316281160-e3a9e78472e2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
-        description: 'Immerse yourself in ancient Japanese culture.',
-    },
-    {
-        id: 'bali',
-        name: 'Bali',
-        country: 'Indonesia',
-        continent: 'Asia',
-        rating: 4.8,
-        price: 849,
-        image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
-        description: 'Island of the Gods, tropical paradise.',
-    },
-    {
-        id: 'bangkok',
-        name: 'Bangkok',
-        country: 'Thailand',
-        continent: 'Asia',
-        rating: 4.6,
-        price: 699,
-        image: 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
-        description: 'Vibrant street life and ornate temples.',
-    },
-    {
-        id: 'barcelona',
-        name: 'Barcelona',
-        country: 'Spain',
-        continent: 'Europe',
-        rating: 4.7,
-        price: 749,
-        image: 'https://images.unsplash.com/photo-1560923983-79bfb3d29b77?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
-        description: "Explore Gaudi's masterpieces and Mediterranean beaches.",
+const getCoverImage = (destination: string) => {
+    const dest = destination.toLowerCase();
+    const MAP: Record<string, string> = {
+        kyoto: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=600&q=80',
+        tokyo: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=600&q=80',
+        paris: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=600&q=80',
+        bali: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&q=80',
+        london: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=600&q=80',
+        dubai: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=600&q=80',
+        delhi: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=600&q=80',
+        mumbai: 'https://images.unsplash.com/photo-1595658658481-d53d3f999875?w=600&q=80',
+        goa: 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=600&q=80',
+        rome: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=600&q=80',
+        barcelona: 'https://images.unsplash.com/photo-1539037116277-4db20889f2d4?w=600&q=80',
+        bangkok: 'https://images.unsplash.com/photo-1563492065599-3520f775eeed?w=600&q=80',
+        jaipur: 'https://images.unsplash.com/photo-1477587458883-47145ed94245?w=600&q=80',
+        manali: 'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=600&q=80',
+    };
+    const key = Object.keys(MAP).find(k => dest.includes(k));
+    return key ? MAP[key] : 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=600&q=80';
+};
 
-    },
-    {
-        id: 'new-york',
-        name: 'New York',
-        country: 'USA',
-        continent: 'America',
-        rating: 4.8,
-        price: 1199,
-        image: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
-        description: 'The city that never sleeps.',
-    },
-    {
-        id: 'rio',
-        name: 'Rio de Janeiro',
-        country: 'Brazil',
-        continent: 'America',
-        rating: 4.7,
-        price: 899,
-        image: 'https://images.unsplash.com/photo-1483729558449-99ef09a8c325?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
-        description: 'Carnival spirit, Copacabana, and Christ the Redeemer.',
-    },
-    {
-        id: 'machu-picchu',
-        name: 'Machu Picchu',
-        country: 'Peru',
-        continent: 'America',
-        rating: 4.9,
-        price: 1049,
-        image: 'https://images.unsplash.com/photo-1587595431973-160d0d94add1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
-        description: 'Ancient Inca citadel high in the Andes.',
-    },
-];
-
-const CONTINENTS = [
-    { name: 'Asia', icon: '🏯' },
-    { name: 'Europe', icon: '🏰' },
-    { name: 'America', icon: '🗽' },
-];
-
-// ─── Destination Card ─────────────────────────────────────────────────────────
-function DestinationCard({
-    item,
-    onPress,
-}: {
-    item: Destination;
-    onPress: () => void;
+function TripCard({ item, tab, onDelete, onView }: {
+    item: Itinerary & { savedAt?: string };
+    tab: TripTab;
+    onDelete: (id: string) => void;
+    onView: (item: Itinerary) => void;
 }) {
-    const [liked, setLiked] = useState(false);
+    const router = useRouter();
+    const isPast = tab === 'past';
+    const dayCount = item.duration ?? ((item.days ?? (item as any).dayPlans)?.length ?? 0);
+    const totalActivities = ((item.days ?? (item as any).dayPlans) ?? []).reduce((s: number, d: any) => s + (d.activities?.length ?? 0), 0);
+    const budget = item.budgetBreakdown?.total ?? (item as any).budget?.total;
+    const coverImg = getCoverImage(item.destination || '');
 
     return (
-        <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.92}>
-            {/* Full-bleed image */}
-            <Image source={{ uri: item.image }} style={styles.cardImage} />
-
-            {/* Bottom dark gradient overlay — top half transparent, bottom half dark */}
-            <View style={styles.cardGradientTop} />
-            <View style={styles.cardGradientBottom} />
-
-            {/* Rating badge — top left */}
-            <BlurView intensity={60} tint="dark" style={styles.ratingBadge}>
-                <Star size={14} color="#FACC15" fill="#FACC15" />
-                <Text style={styles.ratingText}>{item.rating.toFixed(1)}</Text>
-            </BlurView>
-
-            {/* Heart button — top right */}
-            <TouchableOpacity
-                style={styles.heartButton}
-                onPress={() => setLiked(v => !v)}
-                activeOpacity={0.8}
-            >
-                <BlurView intensity={50} tint="light" style={styles.heartBlur}>
-                    <Text style={{ fontSize: 16 }}>{liked ? '❤️' : '🤍'}</Text>
-                </BlurView>
-            </TouchableOpacity>
-
-            {/* Bottom content: country, name, price, arrow */}
-            <View style={styles.cardBottom}>
-                <BlurView intensity={30} tint="light" style={styles.cardGlassContent}>
-                    <View style={{ flex: 1, marginRight: Spacing.md }}>
-                        <View style={styles.countryRow}>
-                            <MapPin size={13} color={Colors.primaryContainer} />
-                            <Text style={styles.countryText}>{item.country}</Text>
+        <TouchableOpacity style={styles.tripCard} onPress={() => onView(item)} activeOpacity={0.9}>
+            <View style={styles.tripImageContainer}>
+                <Image source={{ uri: coverImg }} style={styles.tripImage} />
+                <View style={styles.tripImageOverlay} />
+                <View style={[styles.statusBadge, isPast && styles.statusBadgePast]}>
+                    <Text style={styles.statusText}>{isPast ? 'Completed' : 'Upcoming'}</Text>
+                </View>
+            </View>
+            <View style={styles.tripContent}>
+                <View style={styles.tripInfoRow}>
+                    <View style={styles.tripInfo}>
+                        <Text style={styles.tripDestination} numberOfLines={1}>{item.destination}</Text>
+                        <View style={styles.tripMeta}>
+                            <Clock size={12} color={Colors.textMuted} />
+                            <Text style={styles.tripMetaText}>
+                                {dayCount} day{dayCount !== 1 ? 's' : ''} · {totalActivities} activities
+                            </Text>
                         </View>
-                        <Text style={styles.destinationName}>{item.name}</Text>
-                        <Text style={styles.priceText}>From <Text style={styles.priceBold}>₹{(item.price * 85).toLocaleString('en-IN')}</Text><Text style={{fontSize: 10, opacity: 0.8}}>/person</Text></Text>
                     </View>
-                    <TouchableOpacity style={styles.arrowButton} onPress={onPress} activeOpacity={0.8}>
-                        <ArrowUpRight size={24} color={Colors.text} />
+                    {!!budget && (
+                        <View style={styles.budgetBadge}>
+                            <Text style={styles.budgetText}>
+                                {typeof budget === 'number' ? `₹${budget.toLocaleString()}` : budget}
+                            </Text>
+                        </View>
+                    )}
+                </View>
+                <View style={styles.tripActions}>
+                    <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/trip/splitwise' as any)} activeOpacity={0.7}>
+                        <Receipt size={15} color={Colors.primary} />
+                        <Text style={styles.actionText}>Split</Text>
                     </TouchableOpacity>
-                </BlurView>
+                    <TouchableOpacity style={styles.actionButton} onPress={() => onView(item)} activeOpacity={0.7}>
+                        <MapPin size={15} color={Colors.primary} />
+                        <Text style={styles.actionText}>View</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.actionButton} onPress={() => onDelete(item.id)} activeOpacity={0.7}>
+                        <Trash2 size={15} color={Colors.error ?? '#ef4444'} />
+                        <Text style={[styles.actionText, { color: Colors.error ?? '#ef4444' }]}>Delete</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
         </TouchableOpacity>
     );
 }
 
-// ─── Home Screen ──────────────────────────────────────────────────────────────
 export default function HomeScreen() {
     const { user } = useAuth();
     const router = useRouter();
-    const [selectedContinent, setSelectedContinent] = useState('Europe');
-    const [notifCount] = useState(3);
+    const { itinerary: contextItinerary, setItinerary } = useItineraryContext();
+
+    const [allTrips, setAllTrips] = useState<Itinerary[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [activeTab, setActiveTab] = useState<TripTab>('upcoming');
 
     const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || 'Explorer';
     const firstName = userName.split(' ')[0];
 
-    const filteredDestinations = DESTINATIONS.filter(d => d.continent === selectedContinent);
+    const loadTrips = useCallback(async () => {
+        try {
+            const data = await tripService.getTrips(user?.id ?? '');
+            setAllTrips(data);
+        } catch { /* offline fallback */ } finally {
+            setIsLoading(false);
+        }
+    }, [user?.id]);
+
+    useEffect(() => { loadTrips(); }, [loadTrips]);
+
+    const trips: Itinerary[] = useMemo(() => {
+        const list = [...allTrips];
+        if (contextItinerary && !list.find(t => t.id === contextItinerary.id)) {
+            list.unshift(contextItinerary as any);
+        }
+        return list;
+    }, [allTrips, contextItinerary]);
+
+    const upcoming = trips.filter(t => {
+        if (!t.startDate) return t.id.startsWith('puter_') || t.id.startsWith('offline_');
+        return new Date(t.startDate) > new Date();
+    });
+    const past = trips.filter(t => {
+        if (!t.startDate) return !(t.id.startsWith('puter_') || t.id.startsWith('offline_'));
+        return new Date(t.startDate) <= new Date();
+    });
+    const tabData = activeTab === 'upcoming' ? upcoming : past.length > 0 ? past : (upcoming.length === 0 ? trips : past);
+
+    const totalTrips = trips.length;
+    const totalDays = trips.reduce((s, t) => s + (t.duration || 0), 0);
+    const uniqueCities = new Set(trips.map(t => t.destination)).size;
+
+    const onRefresh = async () => { setIsRefreshing(true); await loadTrips(); setIsRefreshing(false); };
+
+    const handleDelete = (id: string) => {
+        Alert.alert('Delete Trip', 'Are you sure?', [
+            { text: 'Cancel', style: 'cancel' },
+            {
+                text: 'Delete', style: 'destructive', onPress: async () => {
+                    try {
+                        if (!id.startsWith('puter_') && !id.startsWith('offline_')) {
+                            await tripService.deleteTrip(id);
+                        }
+                        setAllTrips(prev => prev.filter(t => t.id !== id));
+                    } catch { Alert.alert('Error', 'Failed to delete'); }
+                },
+            },
+        ]);
+    };
+
+    const handleView = (item: Itinerary) => {
+        setItinerary(item as any);
+        router.push('/trip/itinerary-result');
+    };
+
+    const handleNewTrip = () => router.push('/(tabs)/create' as any);
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            <ScrollView
-                style={styles.scroll}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-            >
-                {/* ── Header ── */}
-                <View style={styles.header}>
-                    <View style={styles.headerRow}>
-                        {/* Menu button */}
-                        <TouchableOpacity style={styles.iconButton}>
-                            <Menu size={20} color={Colors.text} />
-                        </TouchableOpacity>
+            {/* Header */}
+            <View style={styles.header}>
+                <View>
+                    <Text style={styles.greetingSmall}>WELCOME BACK</Text>
+                    <Text style={styles.greeting}>Hello, <Text style={styles.greetingName}>{firstName}</Text></Text>
+                </View>
+                <TouchableOpacity style={styles.createButton} onPress={handleNewTrip} activeOpacity={0.85}>
+                    <Plus size={22} color="#fff" />
+                </TouchableOpacity>
+            </View>
 
-                        {/* Bell */}
-                        <View style={styles.headerRight}>
-                            <TouchableOpacity style={styles.iconButton}>
-                                <Bell size={20} color={Colors.text} />
-                                {notifCount > 0 && (
-                                    <View style={styles.notifBadge}>
-                                        <Text style={styles.notifBadgeText}>{notifCount}</Text>
-                                    </View>
-                                )}
+            {/* Quick Stats */}
+            <View style={styles.statsRow}>
+                <View style={styles.statCard}>
+                    <Globe size={18} color={Colors.primary} />
+                    <Text style={styles.statNum}>{totalTrips}</Text>
+                    <Text style={styles.statLabel}>Trips</Text>
+                </View>
+                <View style={styles.statCard}>
+                    <Calendar size={18} color={Colors.primary} />
+                    <Text style={styles.statNum}>{totalDays}</Text>
+                    <Text style={styles.statLabel}>Days</Text>
+                </View>
+                <View style={styles.statCard}>
+                    <Map size={18} color={Colors.primary} />
+                    <Text style={styles.statNum}>{uniqueCities}</Text>
+                    <Text style={styles.statLabel}>Cities</Text>
+                </View>
+            </View>
+
+            {/* Tab Selector */}
+            <View style={styles.tabBar}>
+                {(['upcoming', 'past'] as TripTab[]).map(tab => (
+                    <TouchableOpacity
+                        key={tab}
+                        style={[styles.tab, activeTab === tab && styles.tabActive]}
+                        onPress={() => setActiveTab(tab)}
+                    >
+                        <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+                            {tab === 'upcoming' ? 'Upcoming' : 'Past Trips'}
+                        </Text>
+                        {(tab === 'upcoming' ? upcoming : past).length > 0 && (
+                            <View style={[styles.countBadge, activeTab === tab && styles.countBadgeActive]}>
+                                <Text style={[styles.countBadgeText, activeTab === tab && styles.countBadgeTextActive]}>
+                                    {(tab === 'upcoming' ? upcoming : past).length}
+                                </Text>
+                            </View>
+                        )}
+                    </TouchableOpacity>
+                ))}
+            </View>
+
+            {/* List */}
+            {isLoading ? (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={Colors.primary} />
+                </View>
+            ) : (
+                <FlatList
+                    data={tabData}
+                    keyExtractor={item => item.id}
+                    contentContainerStyle={styles.listContent}
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
+                    }
+                    renderItem={({ item }) => (
+                        <TripCard item={item as any} tab={activeTab} onDelete={handleDelete} onView={handleView} />
+                    )}
+                    ListEmptyComponent={
+                        <View style={styles.emptyState}>
+                            <View style={styles.emptyIconContainer}>
+                                <MapPin size={36} color={Colors.textMuted} />
+                            </View>
+                            <Text style={styles.emptyTitle}>
+                                {activeTab === 'upcoming' ? 'No upcoming trips' : 'No past trips yet'}
+                            </Text>
+                            <Text style={styles.emptySubtitle}>
+                                {activeTab === 'upcoming'
+                                    ? 'Plan your next adventure with AI!'
+                                    : 'Your completed trips will appear here.'}
+                            </Text>
+                            <TouchableOpacity style={styles.emptyButton} onPress={handleNewTrip} activeOpacity={0.85}>
+                                <Sparkles size={16} color="#fff" />
+                                <Text style={styles.emptyButtonText}>Plan a Trip</Text>
                             </TouchableOpacity>
                         </View>
-                    </View>
-
-                    {/* Greeting Dropdown */}
-                    <Text style={styles.greetingTitle}>Welcome back</Text>
-                    <Text style={styles.greeting}>
-                        Hello, <Text style={styles.greetingName}>{firstName}</Text>
-                    </Text>
-
-                    {/* Search Bar */}
-                    <View style={styles.searchContainer}>
-                        <Search size={20} color={Colors.primary} />
-                        <TextInput 
-                            style={styles.searchInput}
-                            placeholder="Where will your nature take you?"
-                            placeholderTextColor={Colors.textSecondary}
-                        />
-                    </View>
-                </View>
-
-                {/* ── Continent Filter Pills ── */}
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.pillsContainer}
-                >
-                    {CONTINENTS.map(c => (
-                        <TouchableOpacity
-                            key={c.name}
-                            style={[styles.pill, selectedContinent === c.name && styles.pillActive]}
-                            onPress={() => setSelectedContinent(c.name)}
-                            activeOpacity={0.8}
-                        >
-                            <Text style={styles.pillIcon}>{c.icon}</Text>
-                            <Text style={[styles.pillText, selectedContinent === c.name && styles.pillTextActive]}>
-                                {c.name}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
-
-                {/* ── Destination Cards ── */}
-                <View style={styles.cardsSection}>
-                    {filteredDestinations.map(dest => (
-                        <DestinationCard
-                            key={dest.id}
-                            item={dest}
-                            onPress={() => router.push('/(tabs)/explore')}
-                        />
-                    ))}
-                </View>
-            </ScrollView>
+                    }
+                />
+            )}
         </SafeAreaView>
     );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: Colors.background,
-    },
-    scroll: { flex: 1 },
-    scrollContent: { paddingBottom: 100 },
-
-    // Header
+    container: { flex: 1, backgroundColor: Colors.background },
     header: {
-        paddingHorizontal: Spacing.lg,
-        paddingTop: Spacing.md,
-        paddingBottom: Spacing.sm,
+        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+        paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.md,
     },
-    headerRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: Spacing.lg,
+    greetingSmall: {
+        fontFamily: FontFamily.bold, fontSize: 10, color: Colors.primary,
+        letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 4,
     },
-    headerRight: {
-        flexDirection: 'row',
-        gap: Spacing.sm,
-    },
-    iconButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: Colors.surface,
-        justifyContent: 'center',
-        alignItems: 'center',
-        ...Shadows.sm,
-        position: 'relative',
-    },
-    notifBadge: {
-        position: 'absolute',
-        top: -4,
-        right: -4,
-        width: 18,
-        height: 18,
-        borderRadius: 9,
-        backgroundColor: '#EF4444',
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 2,
-        borderColor: Colors.background,
-    },
-    notifBadgeText: {
-        fontFamily: FontFamily.bold,
-        fontSize: 9,
-        color: '#FFFFFF',
-    },
-    greetingTitle: {
-        fontFamily: FontFamily.bold,
-        fontSize: FontSize.xs,
-        color: Colors.primary,
-        textTransform: 'uppercase',
-        letterSpacing: 1.5,
-        opacity: 0.8,
-        marginBottom: 4,
-    },
-    greeting: {
-        fontFamily: FontFamily.bold,
-        fontSize: FontSize['3xl'],
-        color: Colors.text,
-        letterSpacing: -0.5,
-    },
-    greetingName: {
-        fontFamily: FontFamily.bold,
-        fontSize: FontSize['3xl'],
-        color: Colors.text,
-    },
-    searchContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.5)',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.5)',
-        marginTop: Spacing.xl,
-        paddingHorizontal: Spacing.lg,
-        height: 64,
-        borderRadius: 32,
-        gap: Spacing.md,
-        ...Shadows.sm,
-    },
-    searchInput: {
-        flex: 1,
-        fontFamily: FontFamily.medium,
-        fontSize: FontSize.base,
-        color: Colors.text,
-        height: '100%',
+    greeting: { fontFamily: FontFamily.bold, fontSize: FontSize['3xl'], color: Colors.text, letterSpacing: -0.5 },
+    greetingName: { fontFamily: FontFamily.bold, color: Colors.text },
+    createButton: {
+        width: 48, height: 48, borderRadius: 24,
+        backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center',
     },
 
-    // Continent Pills
-    pillsContainer: {
-        paddingHorizontal: Spacing.lg,
-        paddingBottom: Spacing.lg,
-        paddingTop: Spacing.sm,
-        gap: Spacing.sm,
+    statsRow: { flexDirection: 'row', gap: 12, paddingHorizontal: Spacing.lg, marginBottom: Spacing.lg },
+    statCard: {
+        flex: 1, backgroundColor: Colors.surface, borderRadius: 16,
+        paddingVertical: 16, alignItems: 'center', gap: 6, ...Shadows.sm,
     },
-    pill: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        paddingHorizontal: 24,
-        paddingVertical: 14,
-        borderRadius: 50,
-        backgroundColor: 'rgba(255, 255, 255, 0.7)',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.5)',
+    statNum: { fontFamily: FontFamily.bold, fontSize: 24, color: Colors.text },
+    statLabel: { fontFamily: FontFamily.medium, fontSize: 11, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
+
+    tabBar: {
+        flexDirection: 'row', marginHorizontal: Spacing.lg,
+        backgroundColor: Colors.surface, borderRadius: BorderRadius.lg, padding: 4, marginBottom: Spacing.md,
         ...Shadows.sm,
     },
-    pillActive: {
-        backgroundColor: Colors.primary,
-        borderColor: Colors.primary,
-        shadowColor: Colors.primary,
-        shadowOpacity: 0.3,
-        shadowOffset: { width: 0, height: 4 },
-        shadowRadius: 10,
-        elevation: 6,
+    tab: {
+        flex: 1, paddingVertical: 10, borderRadius: BorderRadius.md, alignItems: 'center',
+        flexDirection: 'row', justifyContent: 'center', gap: 6,
     },
-    pillIcon: {
-        fontSize: 20,
-    },
-    pillText: {
-        fontFamily: FontFamily.medium,
-        fontSize: FontSize.base,
-        color: Colors.textSecondary,
-    },
-    pillTextActive: {
-        color: '#FFFFFF',
-        fontFamily: FontFamily.semiBold,
-    },
+    tabActive: { backgroundColor: Colors.primary + '18' },
+    tabText: { fontFamily: FontFamily.medium, fontSize: FontSize.sm, color: Colors.textMuted },
+    tabTextActive: { color: Colors.primary, fontFamily: FontFamily.semiBold },
+    countBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 10, backgroundColor: Colors.borderLight },
+    countBadgeActive: { backgroundColor: Colors.primary + '20' },
+    countBadgeText: { fontFamily: FontFamily.bold, fontSize: 10, color: Colors.textMuted },
+    countBadgeTextActive: { color: Colors.primary },
 
-    // Cards
-    cardsSection: {
-        paddingHorizontal: Spacing.lg,
-        gap: Spacing.md,
+    loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    listContent: { paddingHorizontal: Spacing.lg, paddingBottom: 120, gap: Spacing.md },
+
+    tripCard: {
+        backgroundColor: Colors.surface, borderRadius: BorderRadius.xxl,
+        overflow: 'hidden', ...Shadows.md,
     },
-    card: {
-        height: 480,
-        borderRadius: 32,
-        overflow: 'hidden',
-        backgroundColor: Colors.surface,
-        ...Shadows.lg,
+    tripImageContainer: { height: 130 },
+    tripImage: { width: '100%', height: '100%', resizeMode: 'cover' },
+    tripImageOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.2)' },
+    statusBadge: {
+        position: 'absolute', top: 10, left: 12,
+        backgroundColor: '#22C55E', paddingHorizontal: 10, paddingVertical: 4, borderRadius: BorderRadius.full,
     },
-    cardImage: {
-        ...StyleSheet.absoluteFillObject,
-        width: '100%',
-        height: '100%',
-        resizeMode: 'cover',
+    statusBadgePast: { backgroundColor: 'rgba(0,0,0,0.35)' },
+    statusText: { fontFamily: FontFamily.semiBold, fontSize: FontSize.xs, color: '#FFF' },
+    tripContent: { padding: Spacing.md },
+    tripInfoRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    tripInfo: { flex: 1 },
+    tripDestination: { fontFamily: FontFamily.bold, fontSize: FontSize.lg, color: Colors.text },
+    tripMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+    tripMetaText: { fontFamily: FontFamily.regular, fontSize: FontSize.sm, color: Colors.textMuted },
+    budgetBadge: {
+        backgroundColor: Colors.primary + '15', paddingHorizontal: 10, paddingVertical: 4, borderRadius: BorderRadius.full,
     },
-    cardGradientTop: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: '40%',
-        backgroundColor: 'rgba(0,0,0,0.1)',
+    budgetText: { fontFamily: FontFamily.semiBold, fontSize: FontSize.sm, color: Colors.primary },
+    tripActions: {
+        flexDirection: 'row', gap: Spacing.lg, marginTop: Spacing.md,
+        paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.borderLight,
     },
-    cardGradientBottom: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: '65%',
-        backgroundColor: 'rgba(0,0,0,0.55)',
+    actionButton: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+    actionText: { fontFamily: FontFamily.medium, fontSize: FontSize.sm, color: Colors.primary },
+
+    emptyState: { alignItems: 'center', paddingVertical: Spacing['3xl'], gap: Spacing.sm, paddingTop: 60 },
+    emptyIconContainer: {
+        width: 80, height: 80, borderRadius: 40, backgroundColor: Colors.surface,
+        justifyContent: 'center', alignItems: 'center', marginBottom: Spacing.sm, ...Shadows.sm,
     },
-    // Real gradient simulate: overlay the bottom half only
-    ratingBadge: {
-        position: 'absolute',
-        top: 16,
-        left: 16,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 5,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 20,
-        overflow: 'hidden',
+    emptyTitle: { fontFamily: FontFamily.bold, fontSize: FontSize.xl, color: Colors.text },
+    emptySubtitle: { fontFamily: FontFamily.regular, fontSize: FontSize.base, color: Colors.textSecondary, textAlign: 'center', maxWidth: 260 },
+    emptyButton: {
+        flexDirection: 'row', alignItems: 'center', gap: 8,
+        backgroundColor: Colors.primary, borderRadius: BorderRadius.lg,
+        paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md, marginTop: Spacing.md,
     },
-    ratingText: {
-        fontFamily: FontFamily.bold,
-        fontSize: FontSize.sm,
-        color: '#FFFFFF',
-    },
-    heartButton: {
-        position: 'absolute',
-        top: 14,
-        right: 14,
-        width: 38,
-        height: 38,
-        borderRadius: 19,
-        overflow: 'hidden',
-    },
-    heartBlur: {
-        width: '100%',
-        height: '100%',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    cardBottom: {
-        position: 'absolute',
-        bottom: Spacing.lg,
-        left: Spacing.lg,
-        right: Spacing.lg,
-    },
-    cardGlassContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: Spacing.lg,
-        borderRadius: 24,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.3)',
-        overflow: 'hidden',
-        backgroundColor: 'rgba(0,0,0,0.2)', // tint fallback
-    },
-    countryRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        marginBottom: 4,
-    },
-    countryText: {
-        fontFamily: FontFamily.medium,
-        fontSize: FontSize.sm,
-        color: 'rgba(255,255,255,0.85)',
-    },
-    destinationName: {
-        fontFamily: FontFamily.bold,
-        fontSize: 24,
-        color: '#FFFFFF',
-        marginBottom: 8,
-    },
-    priceText: {
-        fontFamily: FontFamily.medium,
-        fontSize: FontSize.sm,
-        color: 'rgba(255,255,255,0.9)',
-    },
-    priceBold: {
-        fontFamily: FontFamily.bold,
-        fontSize: FontSize.lg,
-        color: '#FFFFFF',
-    },
-    arrowButton: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: Colors.primary,
-        justifyContent: 'center',
-        alignItems: 'center',
-        ...Shadows.md,
-        shadowColor: Colors.primary,
-    },
+    emptyButtonText: { fontFamily: FontFamily.semiBold, fontSize: FontSize.base, color: '#fff' },
 });

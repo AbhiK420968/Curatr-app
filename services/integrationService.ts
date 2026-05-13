@@ -1,36 +1,33 @@
 import type { Activity } from '@/types';
 
 // ============================================================================
-// Foursquare API - Dynamic Search, Geocoding & Images
+// Google Places API - Dynamic Search, Geocoding & Images
 // ============================================================================
 
-export interface FoursquareLocation {
+export interface PlaceLocation {
     lat: number;
     lng: number;
     imageUrl: string | null;
 }
 
-export async function enrichActivityWithFoursquare(
+export async function enrichActivityWithGooglePlaces(
     activity: Activity,
     destination: string
-): Promise<FoursquareLocation | null> {
+): Promise<PlaceLocation | null> {
     try {
-        const apiKey = process.env.EXPO_PUBLIC_FOURSQUARE_KEY;
+        const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY;
         if (!apiKey) return null;
 
-        // Clean up the query to get better hits
+        // Clean up title for better search results
         const query = (activity.title || '')
             .replace(/Morning at |Afternoon at |Evening at /g, '')
             .split(' (')[0];
+        
+        // Search term focusing on the specific place near the destination
+        const searchTerm = `${query} ${destination}`;
 
         const res = await fetch(
-            `https://api.foursquare.com/v3/places/search?query=${encodeURIComponent(query)}&near=${encodeURIComponent(destination)}&limit=1&fields=fsq_id,name,geocodes,photos`,
-            {
-                headers: {
-                    'Authorization': apiKey,
-                    'Accept': 'application/json'
-                }
-            }
+            `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(searchTerm)}&key=${apiKey}`
         );
 
         const data = await res.json();
@@ -40,19 +37,19 @@ export async function enrichActivityWithFoursquare(
 
         let imageUrl = null;
         if (place.photos && place.photos.length > 0) {
-            const photo = place.photos[0];
-            // Format: prefix + size + suffix. "original" gives full res
-            imageUrl = `${photo.prefix}original${photo.suffix}`;
+            const photoRef = place.photos[0].photo_reference;
+            // Fetch max width 800 image
+            imageUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${photoRef}&key=${apiKey}`;
         }
 
         return {
-            lat: place.geocodes?.main?.latitude,
-            lng: place.geocodes?.main?.longitude,
+            lat: place.geometry?.location?.lat,
+            lng: place.geometry?.location?.lng,
             imageUrl,
         };
 
     } catch (err) {
-        console.warn(`[Foursquare] Failed to enrich "${activity.title}":`, err);
+        console.warn(`[Google Places] Failed to enrich "${activity.title}":`, err);
         return null;
     }
 }

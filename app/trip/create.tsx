@@ -11,11 +11,14 @@ import {
     KeyboardAvoidingView,
     Platform,
     Dimensions,
+    Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, FontFamily, FontSize, Spacing, BorderRadius, Shadows } from '@/constants';
 import { ArrowLeft, MapPin, Calendar, Wallet, Compass, Sparkles } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { tripService } from '@/services';
 import type { TravelStyle } from '@/types';
 import { useItineraryContext } from '@/contexts/itinerary-context';
@@ -116,17 +119,19 @@ export default function CreateTripScreen() {
     if (isGenerating) {
         return (
             <View style={styles.generatingContainer}>
-                <View style={[styles.generatingIconContainer, { backgroundColor: Colors.primaryContainer }]}>
-                    <Sparkles size={48} color={Colors.primary} />
+                <LinearGradient colors={['#a4351c', '#491c0f']} style={StyleSheet.absoluteFill} />
+                <Image source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBmAv8L5OwNJXRlp-wIsRaOIuq7YiE8iNrsDPezfiNU-V9MBAquxy4up1V6iu4FpxKo_6hhjYEYiNQhB7lNmEDMErqbX5hGEhm-sk7Icr2-iGxx6dOf80thSvcX0qGZzAAUfYSBRFR5iCbrfKQX0hhz7fUzRFR0htU-Rgzv-R5ZXkP6pJTZaUaIpfw7JAfgrnC90_A_cHcxWw0v7Yw3mKDOAQ-1TtAxbNfXOPYx0n2FJfzcuupBP--fUGkRg1EWu5Qx3sHCh5x3TYE' }} style={[StyleSheet.absoluteFill, { opacity: 0.04 }]} resizeMode="cover" />
+                <View style={[styles.generatingIconContainer, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
+                    <Sparkles size={48} color="#fdb19c" />
                 </View>
                 <View style={styles.generatingContent}>
-                    <Text style={styles.generatingTitle}>Crafting your journey</Text>
-                    <Text style={styles.generatingSubtitle}>
+                    <Text style={[styles.generatingTitle, { color: '#ffffff' }]}>Crafting your journey</Text>
+                    <Text style={[styles.generatingSubtitle, { color: 'rgba(255,255,255,0.7)' }]}>
                         Our AI is planning the perfect {duration}-day itinerary for {destination}...
                     </Text>
                     <View style={styles.generatingLoader}>
-                        <ActivityIndicator size="large" color={Colors.primary} />
-                        <Text style={styles.generatingWaitText}>This could take a minute</Text>
+                        <ActivityIndicator size="large" color="#fdb19c" />
+                        <Text style={[styles.generatingWaitText, { color: 'rgba(255,255,255,0.5)' }]}>This could take a minute</Text>
                     </View>
                 </View>
             </View>
@@ -134,7 +139,10 @@ export default function CreateTripScreen() {
     }
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.container}>
+            <LinearGradient colors={['#a4351c', '#491c0f']} style={StyleSheet.absoluteFill} />
+            <Image source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBmAv8L5OwNJXRlp-wIsRaOIuq7YiE8iNrsDPezfiNU-V9MBAquxy4up1V6iu4FpxKo_6hhjYEYiNQhB7lNmEDMErqbX5hGEhm-sk7Icr2-iGxx6dOf80thSvcX0qGZzAAUfYSBRFR5iCbrfKQX0hhz7fUzRFR0htU-Rgzv-R5ZXkP6pJTZaUaIpfw7JAfgrnC90_A_cHcxWw0v7Yw3mKDOAQ-1TtAxbNfXOPYx0n2FJfzcuupBP--fUGkRg1EWu5Qx3sHCh5x3TYE' }} style={[StyleSheet.absoluteFill, { opacity: 0.04 }]} resizeMode="cover" />
+            <SafeAreaView style={{ flex: 1 }} edges={['top']}>
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -145,7 +153,7 @@ export default function CreateTripScreen() {
                         onPress={() => (step > 0 ? setStep(step - 1) : router.back())}
                         style={styles.backButton}
                     >
-                        <ArrowLeft size={24} color={Colors.text} />
+                        <ArrowLeft size={24} color="#FFFFFF" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Build Itinerary</Text>
                     <View style={{ width: 44 }} />
@@ -169,7 +177,7 @@ export default function CreateTripScreen() {
                     {step === 0 && (
                         <View style={styles.stepContainer}>
                             <View style={styles.iconCircle}>
-                                <MapPin size={32} color={Colors.primary} />
+                                <MapPin size={32} color="#fdb19c" />
                             </View>
                             <Text style={styles.stepTitle}>Where to?</Text>
                             <Text style={styles.stepSubtitle}>
@@ -191,7 +199,7 @@ export default function CreateTripScreen() {
                     {step === 1 && (
                         <View style={styles.stepContainer}>
                             <View style={styles.iconCircle}>
-                                <Calendar size={32} color={Colors.primary} />
+                                <Calendar size={32} color="#fdb19c" />
                             </View>
                             <Text style={styles.stepTitle}>How long?</Text>
                             <Text style={styles.stepSubtitle}>
@@ -225,7 +233,7 @@ export default function CreateTripScreen() {
                     {step === 2 && (
                         <View style={styles.stepContainer}>
                             <View style={styles.iconCircle}>
-                                <Wallet size={32} color={Colors.primary} />
+                                <Wallet size={32} color="#fdb19c" />
                             </View>
                             <Text style={styles.stepTitle}>What's your budget?</Text>
                             <Text style={styles.stepSubtitle}>
@@ -255,7 +263,7 @@ export default function CreateTripScreen() {
                     {step === 3 && (
                         <View style={styles.stepContainer}>
                             <View style={styles.iconCircle}>
-                                <Compass size={32} color={Colors.primary} />
+                                <Compass size={32} color="#fdb19c" />
                             </View>
                             <Text style={styles.stepTitle}>Travel style?</Text>
                             <Text style={styles.stepSubtitle}>
@@ -284,7 +292,7 @@ export default function CreateTripScreen() {
                     {step === 4 && (
                         <View style={styles.stepContainer}>
                             <View style={styles.iconCircle}>
-                                <Sparkles size={32} color={Colors.primary} />
+                                <Sparkles size={32} color="#fdb19c" />
                             </View>
                             <Text style={styles.stepTitle}>What excites you?</Text>
                             <Text style={styles.stepSubtitle}>
@@ -323,21 +331,22 @@ export default function CreateTripScreen() {
                         disabled={!canProceed()}
                         activeOpacity={0.85}
                     >
-                        {step === 4 && <Sparkles size={20} color={Colors.textInverse} style={{ marginRight: 8 }} />}
+                        {step === 4 && <Sparkles size={20} color="#491c0f" style={{ marginRight: 8 }} />}
                         <Text style={styles.nextButtonText}>
                             {step === 4 ? 'Generate Itinerary' : 'Continue'}
                         </Text>
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
-        </SafeAreaView>
+            </SafeAreaView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.background,
+        backgroundColor: 'transparent',
     },
     header: {
         flexDirection: 'row',
@@ -350,16 +359,15 @@ const styles = StyleSheet.create({
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: Colors.surface,
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
         justifyContent: 'center',
         alignItems: 'center',
         marginLeft: Spacing.sm,
-        ...Shadows.sm,
     },
     headerTitle: {
         fontFamily: FontFamily.semiBold,
         fontSize: FontSize.lg,
-        color: Colors.text,
+        color: '#ffffff',
     },
     progressContainer: {
         paddingHorizontal: Spacing.lg,
@@ -367,19 +375,19 @@ const styles = StyleSheet.create({
     },
     progressBarBackground: {
         height: 6,
-        backgroundColor: Colors.borderLight,
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
         borderRadius: 3,
         overflow: 'hidden',
     },
     progressBarFill: {
         height: '100%',
-        backgroundColor: Colors.primary,
+        backgroundColor: '#fdb19c',
         borderRadius: 3,
     },
     progressText: {
         fontFamily: FontFamily.medium,
         fontSize: FontSize.xs,
-        color: Colors.textSecondary,
+        color: 'rgba(255, 255, 255, 0.7)',
         marginTop: 8,
         textAlign: 'center',
     },
@@ -394,16 +402,17 @@ const styles = StyleSheet.create({
     },
     stepContainer: {
         alignItems: 'center',
-        backgroundColor: Colors.surface,
+        backgroundColor: 'rgba(255, 255, 255, 0.08)',
         borderRadius: BorderRadius.xxl,
         padding: Spacing.xl,
-        ...Shadows.md,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.15)',
     },
     iconCircle: {
         width: 64,
         height: 64,
         borderRadius: 32,
-        backgroundColor: Colors.background,
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: Spacing.md,
@@ -411,25 +420,25 @@ const styles = StyleSheet.create({
     stepTitle: {
         fontFamily: FontFamily.bold,
         fontSize: FontSize['2xl'],
-        color: Colors.text,
+        color: '#ffffff',
         textAlign: 'center',
     },
     stepSubtitle: {
         fontFamily: FontFamily.regular,
         fontSize: FontSize.base,
-        color: Colors.textSecondary,
+        color: 'rgba(255, 255, 255, 0.7)',
         marginTop: Spacing.xs,
         marginBottom: Spacing.xl,
         textAlign: 'center',
     },
     largeInput: {
         width: '100%',
-        backgroundColor: Colors.background,
+        backgroundColor: 'rgba(0, 0, 0, 0.2)',
         borderRadius: BorderRadius.xl,
         padding: Spacing.lg,
         fontFamily: FontFamily.semiBold,
         fontSize: FontSize.xl,
-        color: Colors.text,
+        color: '#ffffff',
         textAlign: 'center',
     },
     durationRow: {
@@ -443,15 +452,14 @@ const styles = StyleSheet.create({
         width: 56,
         height: 56,
         borderRadius: 28,
-        backgroundColor: Colors.background,
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
         justifyContent: 'center',
         alignItems: 'center',
-        ...Shadows.sm,
     },
     durationButtonText: {
         fontFamily: FontFamily.medium,
         fontSize: 28,
-        color: Colors.primary,
+        color: '#ffffff',
     },
     durationValueContainer: {
         alignItems: 'center',
@@ -460,13 +468,13 @@ const styles = StyleSheet.create({
     durationValue: {
         fontFamily: FontFamily.bold,
         fontSize: 56,
-        color: Colors.text,
+        color: '#ffffff',
         lineHeight: 64,
     },
     durationLabel: {
         fontFamily: FontFamily.medium,
         fontSize: FontSize.lg,
-        color: Colors.textSecondary,
+        color: 'rgba(255, 255, 255, 0.7)',
     },
     optionsGrid: {
         flexDirection: 'row',
@@ -477,7 +485,7 @@ const styles = StyleSheet.create({
     },
     optionCard: {
         width: '47%',
-        backgroundColor: Colors.background,
+        backgroundColor: 'rgba(0, 0, 0, 0.2)',
         borderRadius: BorderRadius.xl,
         padding: Spacing.lg,
         alignItems: 'center',
@@ -485,9 +493,8 @@ const styles = StyleSheet.create({
         borderColor: 'transparent',
     },
     optionCardActive: {
-        borderColor: Colors.primary,
-        backgroundColor: Colors.surface,
-        ...Shadows.sm,
+        borderColor: '#fdb19c',
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
     },
     optionEmoji: {
         fontSize: 32,
@@ -496,13 +503,13 @@ const styles = StyleSheet.create({
     optionLabel: {
         fontFamily: FontFamily.semiBold,
         fontSize: FontSize.base,
-        color: Colors.text,
+        color: '#ffffff',
         textAlign: 'center',
     },
     optionSub: {
         fontFamily: FontFamily.regular,
         fontSize: FontSize.sm,
-        color: Colors.textSecondary,
+        color: 'rgba(255, 255, 255, 0.6)',
         marginTop: 4,
     },
     chipWrap: {
@@ -516,29 +523,27 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.lg,
         paddingVertical: 12,
         borderRadius: BorderRadius.full,
-        backgroundColor: Colors.background,
+        backgroundColor: 'rgba(0, 0, 0, 0.2)',
     },
     chipActive: {
-        backgroundColor: Colors.primary,
+        backgroundColor: '#fdb19c',
     },
     chipText: {
         fontFamily: FontFamily.medium,
         fontSize: FontSize.sm,
-        color: Colors.textSecondary,
+        color: 'rgba(255, 255, 255, 0.7)',
     },
     chipTextActive: {
-        color: Colors.textInverse,
+        color: '#491c0f',
     },
     bottomAction: {
         paddingHorizontal: Spacing.lg,
         paddingVertical: Spacing.md,
-        backgroundColor: Colors.surface,
-        borderTopWidth: 1,
-        borderTopColor: Colors.borderLight,
+        backgroundColor: 'transparent',
     },
     nextButton: {
         flexDirection: 'row',
-        backgroundColor: Colors.primary,
+        backgroundColor: '#ffffff',
         borderRadius: BorderRadius.xl,
         height: 56,
         justifyContent: 'center',
@@ -546,19 +551,19 @@ const styles = StyleSheet.create({
         ...Shadows.md,
     },
     nextButtonDisabled: {
-        backgroundColor: Colors.border,
+        backgroundColor: 'rgba(255, 255, 255, 0.3)',
         elevation: 0,
         shadowOpacity: 0,
     },
     nextButtonText: {
         fontFamily: FontFamily.semiBold,
         fontSize: FontSize.lg,
-        color: Colors.textInverse,
+        color: '#491c0f',
     },
     // Generating overlay
     generatingContainer: {
         flex: 1,
-        backgroundColor: Colors.surface,
+        backgroundColor: 'transparent',
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -577,13 +582,13 @@ const styles = StyleSheet.create({
     generatingTitle: {
         fontFamily: FontFamily.bold,
         fontSize: FontSize['3xl'],
-        color: Colors.text,
+        color: '#ffffff',
         textAlign: 'center',
     },
     generatingSubtitle: {
         fontFamily: FontFamily.regular,
         fontSize: FontSize.lg,
-        color: Colors.textSecondary,
+        color: 'rgba(255, 255, 255, 0.7)',
         textAlign: 'center',
         marginTop: Spacing.md,
         lineHeight: 24,
@@ -595,7 +600,7 @@ const styles = StyleSheet.create({
     generatingWaitText: {
         fontFamily: FontFamily.medium,
         fontSize: FontSize.sm,
-        color: Colors.textMuted,
+        color: 'rgba(255, 255, 255, 0.5)',
         marginTop: Spacing.md,
     },
 });

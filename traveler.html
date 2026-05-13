@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-container": "#ffc4b7",
+                        "on-background": "#2c2f30",
+                        "outline": "#757778",
+                        "inverse-surface": "#0c0f10",
+                        "surface-tint": "#5c5b5b",
+                        "on-primary-container": "#575756",
+                        "secondary-fixed-dim": "#ffb09e",
+                        "primary-fixed": "#edeaea",
+                        "on-tertiary-fixed-variant": "#6d3929",
+                        "surface-container-highest": "#dadddf",
+                        "tertiary-fixed-dim": "#eea490",
+                        "tertiary-dim": "#784131",
+                        "on-surface": "#2c2f30",
+                        "surface": "#f5f6f7",
+                        "on-secondary-container": "#882109",
+                        "secondary-fixed": "#ffc4b7",
+                        "primary": "#5c5b5b",
+                        "background": "#f5f6f7",
+                        "surface-container-low": "#eff1f2",
+                        "on-tertiary-fixed": "#491c0f",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-container": "#fdb19c",
+                        "secondary": "#a4351c",
+                        "surface-variant": "#dadddf",
+                        "surface-container": "#e6e8ea",
+                        "inverse-primary": "#ffffff",
+                        "on-primary-fixed-variant": "#616160",
+                        "tertiary": "#864c3c",
+                        "tertiary-fixed": "#fdb19c",
+                        "on-secondary": "#ffefec",
+                        "error": "#b41340",
+                        "primary-fixed-dim": "#dfdcdc",
+                        "on-secondary-fixed-variant": "#952a12",
+                        "on-tertiary": "#ffefec",
+                        "on-error": "#ffefef",
+                        "outline-variant": "#abadae",
+                        "on-error-container": "#510017",
+                        "primary-container": "#edeaea",
+                        "on-surface-variant": "#595c5d",
+                        "secondary-dim": "#942911",
+                        "surface-bright": "#f5f6f7",
+                        "on-primary-fixed": "#454444",
+                        "on-secondary-fixed": "#6a1100",
+                        "error-dim": "#a70138",
+                        "primary-dim": "#504f4f",
+                        "inverse-on-surface": "#9b9d9e",
+                        "error-container": "#f74b6d",
+                        "on-primary": "#f5f2f1",
+                        "surface-dim": "#d1d5d7",
+                        "on-tertiary-container": "#633021",
+                        "surface-container-high": "#e0e3e4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Plus Jakarta Sans"],
+                        "label": ["Plus Jakarta Sans"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .tonal-shift-only { background-color: #f5f6f7; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="w-full top-0 bg-[#f5f6f7] dark:bg-[#0c0f10] flex items-center justify-between px-6 py-6 w-full z-10">
+<div class="flex items-center gap-4">
+<button class="text-[#5c5b5b] dark:text-[#eff1f2] hover:opacity-80 transition-opacity scale-102 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-2xl">arrow_back</span>
+</button>
+</div>
+<div class="absolute left-1/2 -translate-x-1/2">
+<h1 class="text-[#5c5b5b] dark:text-[#eff1f2] font-['Plus_Jakarta_Sans'] font-semibold text-lg leading-tight">Select Travelers</h1>
+</div>
+<div class="w-8"></div> <!-- Spacer for centering -->
+</header>
+<main class="flex-grow px-6 pt-2 pb-32">
+<div class="max-w-md mx-auto">
+<!-- Hero Header -->
+<div class="mb-10 mt-4">
+<h2 class="text-3xl font-bold tracking-tight text-on-surface mb-2">Traveler Selection</h2>
+<p class="text-on-surface-variant font-medium">Select number of travelers</p>
+</div>
+<!-- Traveler Selection List -->
+<div class="space-y-4">
+<!-- Adults -->
+<div class="bg-surface-container-lowest p-6 rounded-lg flex items-center justify-between shadow-sm">
+<div>
+<h3 class="text-lg font-bold text-on-surface">Adults</h3>
+<p class="text-sm text-on-surface-variant">Ages 13 or above</p>
+</div>
+<div class="flex items-center gap-5">
+<button class="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center text-on-surface hover:bg-surface-container-low transition-colors active:scale-95">
+<span class="material-symbols-outlined">remove</span>
+</button>
+<span class="text-xl font-bold w-4 text-center">1</span>
+<button class="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center text-on-surface hover:bg-surface-container-low transition-colors active:scale-95">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</div>
+<!-- Children -->
+<div class="bg-surface-container-lowest p-6 rounded-lg flex items-center justify-between shadow-sm">
+<div>
+<h3 class="text-lg font-bold text-on-surface">Children</h3>
+<p class="text-sm text-on-surface-variant">Ages 2–12</p>
+</div>
+<div class="flex items-center gap-5">
+<button class="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center text-on-surface-variant opacity-40 cursor-not-allowed">
+<span class="material-symbols-outlined">remove</span>
+</button>
+<span class="text-xl font-bold w-4 text-center">0</span>
+<button class="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center text-on-surface hover:bg-surface-container-low transition-colors active:scale-95">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</div>
+<!-- Infants -->
+<div class="bg-surface-container-lowest p-6 rounded-lg flex items-center justify-between shadow-sm">
+<div>
+<h3 class="text-lg font-bold text-on-surface">Infants</h3>
+<p class="text-sm text-on-surface-variant">Under 2</p>
+</div>
+<div class="flex items-center gap-5">
+<button class="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center text-on-surface-variant opacity-40 cursor-not-allowed">
+<span class="material-symbols-outlined">remove</span>
+</button>
+<span class="text-xl font-bold w-4 text-center">0</span>
+<button class="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center text-on-surface hover:bg-surface-container-low transition-colors active:scale-95">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</div>
+<!-- Pets -->
+<div class="bg-surface-container-lowest p-6 rounded-lg flex items-center justify-between shadow-sm">
+<div class="pr-4">
+<h3 class="text-lg font-bold text-on-surface">Pets</h3>
+<a class="text-sm text-on-surface font-semibold underline block mt-1" href="#">Bringing a service animal?</a>
+</div>
+<div class="flex items-center gap-5">
+<button class="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center text-on-surface-variant opacity-40 cursor-not-allowed">
+<span class="material-symbols-outlined">remove</span>
+</button>
+<span class="text-xl font-bold w-4 text-center">0</span>
+<button class="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center text-on-surface hover:bg-surface-container-low transition-colors active:scale-95">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Bento Hint/Policy Card -->
+<div class="mt-8 p-6 bg-secondary-container rounded-lg relative overflow-hidden group">
+<div class="relative z-10">
+<h4 class="text-on-secondary-container font-bold text-lg mb-1">Traveler Policy</h4>
+<p class="text-on-secondary-container/80 text-sm leading-relaxed">Ensure all guest information matches their official identification for a smooth check-in process.</p>
+</div>
+<!-- Abstract visual element -->
+<div class="absolute top-0 right-0 w-32 h-32 bg-secondary/10 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform"></div>
+</div>
+</div>
+</main>
+<!-- Bottom Actions Area -->
+<div class="fixed bottom-0 left-0 w-full bg-surface-container-lowest/80 backdrop-blur-xl px-6 pt-4 pb-10 flex flex-col items-center">
+<button class="w-full max-w-md bg-inverse-surface text-inverse-on-surface py-5 rounded-lg font-bold text-lg scale-102 active:scale-95 transition-all shadow-lg hover:opacity-95">
+            Update
+        </button>
+</div>
+<!-- BottomNavBar (Hidden on this focused task page as per shell suppression rule) -->
+<!-- The navigation shell is suppressed because this is a Task-Focused sub-page with a focus on 'Update' action. -->
+</body></html>

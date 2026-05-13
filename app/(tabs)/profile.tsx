@@ -150,7 +150,6 @@ const sectionCardStyles = StyleSheet.create({
         backgroundColor: Colors.surface, borderRadius: BorderRadius.xl,
         marginHorizontal: Spacing.lg, marginBottom: Spacing.lg,
         padding: Spacing.lg, ...Shadows.sm, shadowOpacity: 0.06,
-        borderWidth: 1, borderColor: Colors.borderLight,
     },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
     titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -210,21 +209,22 @@ function SecurityItem({ icon, label, sub, actionLabel, onAction, danger = false,
 const securityStyles = StyleSheet.create({
     row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: 8 },
     dangerRow: {
-        backgroundColor: 'rgba(239,68,68,0.04)', borderRadius: BorderRadius.lg,
-        borderWidth: 1, borderColor: 'rgba(239,68,68,0.15)', padding: Spacing.sm, marginTop: 4,
+        backgroundColor: 'rgba(180, 19, 64, 0.04)', borderRadius: BorderRadius.lg,
+        padding: Spacing.sm, marginTop: 4,
     },
     iconWrap: {
         width: 40, height: 40, borderRadius: 20,
         backgroundColor: Colors.borderLight, justifyContent: 'center', alignItems: 'center',
     },
-    dangerIcon: { backgroundColor: 'rgba(239,68,68,0.1)' },
+    dangerIcon: { backgroundColor: 'rgba(180, 19, 64, 0.1)' },
     label: { fontFamily: FontFamily.semiBold, fontSize: FontSize.base, color: Colors.text },
     sub: { fontFamily: FontFamily.regular, fontSize: FontSize.xs, color: Colors.textMuted, marginTop: 2 },
     btn: {
-        backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+        backgroundColor: Colors.surface,
         borderRadius: BorderRadius.md, paddingHorizontal: 12, paddingVertical: 8,
+        ...Shadows.sm,
     },
-    dangerBtn: { backgroundColor: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.2)' },
+    dangerBtn: { backgroundColor: 'rgba(180, 19, 64, 0.08)' },
     btnText: { fontFamily: FontFamily.semiBold, fontSize: FontSize.sm, color: Colors.text },
 });
 
@@ -354,8 +354,8 @@ export default function ProfileScreen() {
                     {/* Stats */}
                     <View style={styles.statsRow}>
                         <StatCard icon={<MapPin size={16} color={Colors.primary} />} value={stats.totalTrips} label="Trips" color={Colors.primary} />
-                        <StatCard icon={<Globe size={16} color="#7C3AED" />} value={stats.totalCountries} label="Countries" color="#7C3AED" />
-                        <StatCard icon={<Calendar size={16} color="#D97706" />} value={stats.totalDays} label="Days" color="#D97706" />
+                        <StatCard icon={<Globe size={16} color={Colors.secondary} />} value={stats.totalCountries} label="Countries" color={Colors.secondary} />
+                        <StatCard icon={<Calendar size={16} color={Colors.tertiary} />} value={stats.totalDays} label="Days" color={Colors.tertiary} />
                     </View>
                 </View>
 
@@ -665,7 +665,6 @@ const styles = StyleSheet.create({
         flex: 1, backgroundColor: Colors.background, borderRadius: BorderRadius.lg,
         paddingHorizontal: Spacing.md, fontFamily: FontFamily.medium,
         fontSize: FontSize.sm, color: Colors.text, height: 44,
-        borderWidth: 1, borderColor: Colors.borderLight,
     },
     addFriendBtn: {
         width: 44, height: 44, borderRadius: BorderRadius.lg,
@@ -692,7 +691,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center', alignItems: 'center',
     },
     rejectBtn: {
-        width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(239,68,68,0.1)',
+        width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(180, 19, 64, 0.1)',
         justifyContent: 'center', alignItems: 'center',
     },
     emptyFriends: { alignItems: 'center', gap: 8, paddingVertical: Spacing.lg },
